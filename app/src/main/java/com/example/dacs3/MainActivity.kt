@@ -33,7 +33,7 @@ import android.content.Intent
 import android.net.Uri
 import android.util.Log
 import androidx.lifecycle.lifecycleScope
-import com.example.dacs3.ui.screens.VideoCall.*
+import com.example.dacs3.ui.screens.tree.*
 import com.google.firebase.messaging.FirebaseMessaging
 import kotlinx.coroutines.launch
 
@@ -196,8 +196,8 @@ class MainActivity : ComponentActivity() {
                             // SocialScreen()
                         }
 
-                        composable(BottomBarScreen.VideoCall.route) {
-                            VideoCallScreen()
+                        composable(BottomBarScreen.tree.route) {
+                            //TreeScreen()
                         }
 
                         composable(BottomBarScreen.Notification.route) {

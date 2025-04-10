@@ -26,10 +26,10 @@ sealed class BottomBarScreen(
         iconResId = R.drawable.ic_social
     )
     
-    object VideoCall : BottomBarScreen(
-        route = "videocall",
-        title = "Video Call",
-        iconResId = R.drawable.ic_video_call
+    object tree : BottomBarScreen(
+        route = "tree",
+        title = "tree",
+        iconResId = R.drawable.ic_tree
     )
     
     object Notification : BottomBarScreen(
@@ -50,7 +50,7 @@ fun BottomBar(navController: NavController) {
     val screens = listOf(
         BottomBarScreen.Chat,
         BottomBarScreen.Social,
-        BottomBarScreen.VideoCall,
+        BottomBarScreen.tree,
         BottomBarScreen.Notification,
         BottomBarScreen.Profile
     )
