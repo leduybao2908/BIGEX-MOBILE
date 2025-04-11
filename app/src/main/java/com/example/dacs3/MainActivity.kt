@@ -28,7 +28,6 @@ import com.example.dacs3.ui.screens.chat.*
 import com.example.dacs3.ui.screens.notification.*
 import com.example.dacs3.ui.screens.profile.*
 import com.example.dacs3.ui.theme.DACS3Theme
-import com.example.dacs3.ui.viewmodels.*
 import android.content.Intent
 import android.net.Uri
 import android.provider.Settings
