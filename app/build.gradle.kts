@@ -75,8 +75,8 @@ dependencies {
     implementation(platform("com.google.firebase:firebase-bom:32.7.4"))
     implementation("com.google.firebase:firebase-auth-ktx")
     implementation("com.google.firebase:firebase-database-ktx")
-    implementation(libs.firebase.messaging.ktx)
-    implementation(libs.firebase.messaging)
+    implementation("com.google.firebase:firebase-messaging-ktx")
+
 
 
     implementation("io.agora.rtc:full-sdk:4.2.6")
@@ -132,7 +132,10 @@ dependencies {
     // Coil
     implementation("io.coil-kt:coil-compose:2.5.0")
 
-    
+    implementation("com.google.firebase:firebase-firestore-ktx")
+    implementation("com.google.firebase:firebase-storage-ktx")
+
+
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation(libs.androidx.junit.v115)
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
