@@ -1,14 +1,11 @@
-package com.example.dacs3.ui.viewmodels
+package com.example.dacs3.viewmodels
 
-import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.dacs3.data.*
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.FirebaseUser
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
@@ -65,7 +62,8 @@ class AuthViewModel(
                     )
                     handleLoginSuccess(user)
                 } ?: run {
-                    _authEvent.value = AuthEvent.ShowError("Login failed. Please check your credentials.")
+                    _authEvent.value =
+                        AuthEvent.ShowError("Login failed. Please check your credentials.")
                 }
             } catch (e: Exception) {
                 val errorMessage = when {
@@ -100,7 +98,8 @@ class AuthViewModel(
                     return@launch
                 }
                 if (password.length < 6) {
-                    _authEvent.value = AuthEvent.ShowError("Password must be at least 6 characters long")
+                    _authEvent.value =
+                        AuthEvent.ShowError("Password must be at least 6 characters long")
                     return@launch
                 }
 
@@ -133,7 +132,8 @@ class AuthViewModel(
                     userPreferences.saveUser(user)
                     _authState.value = AuthState.Success(user)
                 } ?: run {
-                    _authEvent.value = AuthEvent.ShowError("Failed to create user. Please try again")
+                    _authEvent.value =
+                        AuthEvent.ShowError("Failed to create user. Please try again")
                 }
             } catch (e: Exception) {
                 val errorMessage = when {

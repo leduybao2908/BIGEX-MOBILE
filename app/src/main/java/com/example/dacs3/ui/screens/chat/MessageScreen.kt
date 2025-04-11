@@ -27,10 +27,19 @@ fun MessageScreen(
     friendId: String,
     friendUsername: String,
     onNavigateBack: () -> Unit,
-    viewModel: ChatViewModel = viewModel()
+    viewModel: ChatViewModel = viewModel(),
+    notificationViewModel: NotificationViewModel = viewModel()
 ) {
     val messages by viewModel.messages.collectAsState()
     var messageText by remember { mutableStateOf("") }
+
+    LaunchedEffect(Unit) {
+        notificationViewModel.notifications.value
+            .filter { it.fromUserId == friendId && !it.isRead }
+            .forEach { notification ->
+                notificationViewModel.markAsRead(notification.id)
+            }
+    }
 
     Scaffold(
         topBar = {

@@ -13,7 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.dacs3.ui.components.*
-import com.example.dacs3.ui.viewmodels.NotificationViewModel
+import com.example.dacs3.viewmodels.NotificationViewModel
 import com.example.dacs3.viewmodels.AddFriendViewModel
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -175,6 +175,7 @@ fun NotificationScreen(
                                     }
 
                                     "new_message" -> {
+                                        val unreadMessages = userNotifications.distinctBy { it.timestamp }.count { !it.isRead }
                                         Button(
                                             onClick = {
                                                 onNavigateToMessage(userId, userNotifications.first().fromUsername)
@@ -188,7 +189,7 @@ fun NotificationScreen(
                                                 modifier = Modifier.padding(8.dp)
                                             ) {
                                                 Text(
-                                                    text = "${userNotifications.size} tin nhắn mới",
+                                                    text = "$unreadMessages tin nhắn mới",
                                                     style = MaterialTheme.typography.bodyLarge
                                                 )
                                             }

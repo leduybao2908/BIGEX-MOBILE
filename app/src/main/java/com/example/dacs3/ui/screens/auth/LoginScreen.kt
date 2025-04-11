@@ -8,7 +8,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.example.dacs3.ui.viewmodels.*
+import com.example.dacs3.viewmodels.*
 
 @Composable
 fun LoginScreen(
