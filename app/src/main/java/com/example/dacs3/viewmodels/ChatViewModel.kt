@@ -13,13 +13,36 @@ import com.example.dacs3.service.NotificationService
 import java.util.*
 
 data class Message(
+    @get:PropertyName("id")
+    @PropertyName("id")
     val id: String = "",
+
+    @get:PropertyName("senderId")
+    @PropertyName("senderId")
     val senderId: String = "",
+
+    @get:PropertyName("receiverId")
+    @PropertyName("receiverId")
     val receiverId: String = "",
+
+    @get:PropertyName("content")
+    @PropertyName("content")
     val content: String = "",
+
+    @get:PropertyName("timestamp")
+    @PropertyName("timestamp")
     val timestamp: Long = System.currentTimeMillis(),
+
+    @get:PropertyName("senderName")
+    @PropertyName("senderName")
     val senderName: String = "",
+
+    @get:PropertyName("senderProfilePicture")
+    @PropertyName("senderProfilePicture")
     val senderProfilePicture: String = "",
+
+    @get:PropertyName("isRead")
+    @PropertyName("isRead")
     var isRead: Boolean = false
 )
 
@@ -43,6 +66,18 @@ class ChatViewModel : ViewModel() {
     init {
         loadFriends()
         observeMessages()
+        // Khởi tạo coroutine để ghi log tin nhắn chưa đọc mỗi giây
+        viewModelScope.launch {
+            while(true) {
+                friends.value.forEach { friend ->
+                    val unreadCount = getUnreadCount(friend.uid)
+                    if (unreadCount > 0) {
+                        println("[${friend.username}] có $unreadCount tin nhắn chưa đọc")
+                    }
+                }
+                kotlinx.coroutines.delay(1000) // Đợi 1 giây
+            }
+        }
     }
 
     private fun loadFriends() {
@@ -129,12 +164,11 @@ class ChatViewModel : ViewModel() {
     }
 
     fun getUnreadCount(friendId: String): Int {
-        val unreadMessages = messages.value.filter { msg ->
+        return messages.value.filter { msg ->
             msg.senderId == friendId &&
             msg.receiverId == currentUserId &&
             !msg.isRead
-        }
-        return unreadMessages.distinctBy { it.id }.size
+        }.distinctBy { it.id }.size
     }
 
     fun getLastMessageTime(friendId: String): String? {
@@ -178,16 +212,16 @@ class ChatViewModel : ViewModel() {
                 val currentUserSnapshot = userDatabase.getUserById(currentUser.uid)
                 val currentUserData = currentUserSnapshot.getValue(UserDatabaseModel::class.java)
 
-                val message = Message(
-                    id = messageId,
-                    senderId = currentUser.uid,
-                    receiverId = receiverId,
-                    content = content,
-                    timestamp = System.currentTimeMillis(),
-                    senderName = currentUserData?.username ?: "",
-                    senderProfilePicture = currentUserData?.profilePicture ?: ""
-                )
-                messagesRef.child(messageId).setValue(message)
+                messagesRef.child(messageId).setValue(mapOf(
+                    "id" to messageId,
+                    "senderId" to currentUser.uid,
+                    "receiverId" to receiverId,
+                    "content" to content,
+                    "timestamp" to System.currentTimeMillis(),
+                    "senderName" to (currentUserData?.username ?: ""),
+                    "senderProfilePicture" to (currentUserData?.profilePicture ?: ""),
+                    "isRead" to false
+                ))
 
                 // Tạo thông báo cho người nhận
                 database.getReference("notifications")

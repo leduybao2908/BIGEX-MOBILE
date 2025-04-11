@@ -30,6 +30,24 @@ fun ChatScreen(
     val friends by viewModel.friends.collectAsState()
     var searchQuery by remember { mutableStateOf("") }
 
+
+
+    LaunchedEffect(friends) {
+        friends.forEach { friend ->
+            if (viewModel.getUnreadCount(friend.uid) == 0) {
+                viewModel.messages.value
+                    .filter { msg ->
+                        msg.senderId == friend.uid &&
+                                msg.receiverId == viewModel.currentUserId &&
+                                !msg.isRead
+                    }
+                    .forEach { msg ->
+                        viewModel.markMessageAsRead(msg.id)
+                    }
+            }
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -79,7 +97,16 @@ fun ChatScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(vertical = 4.dp),
-                        onClick = { onNavigateToMessage(friend.uid, friend.username) }
+                        onClick = {  viewModel.messages.value
+                            .filter { msg ->
+                                msg.senderId == friend.uid &&
+                                        msg.receiverId == viewModel.currentUserId &&
+                                        !msg.isRead
+                            }
+                            .forEach { msg ->
+                                viewModel.markMessageAsRead(msg.id)
+                            }
+                            onNavigateToMessage(friend.uid, friend.username)  }
                     ) {
                         Row(
                             modifier = Modifier
@@ -191,3 +218,4 @@ fun ChatScreen(
 
 
 }
+

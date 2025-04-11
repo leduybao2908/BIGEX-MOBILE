@@ -13,8 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.dacs3.ui.components.*
-import com.example.dacs3.viewmodels.NotificationViewModel
-import com.example.dacs3.viewmodels.AddFriendViewModel
+import com.example.dacs3.viewmodels.*
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
@@ -24,7 +23,8 @@ import java.time.temporal.ChronoUnit
 fun NotificationScreen(
     notificationViewModel: NotificationViewModel = viewModel(),
     addFriendViewModel: AddFriendViewModel = viewModel(),
-    onNavigateToMessage: (String, String) -> Unit = { _, _ -> }
+    onNavigateToMessage: (String, String) -> Unit = { _, _ -> },
+    chatViewModel: ChatViewModel = viewModel(),
 ) {
     val notifications by notificationViewModel.notifications.collectAsState()
 
@@ -175,24 +175,58 @@ fun NotificationScreen(
                                     }
 
                                     "new_message" -> {
-                                        val unreadMessages = userNotifications.distinctBy { it.timestamp }.count { !it.isRead }
-                                        Button(
-                                            onClick = {
-                                                onNavigateToMessage(userId, userNotifications.first().fromUsername)
-                                            },
-                                            modifier = Modifier.fillMaxWidth(),
-                                            colors = ButtonDefaults.buttonColors(
-                                                containerColor = MaterialTheme.colorScheme.surface
-                                            )
-                                        ) {
-                                            Column(
-                                                modifier = Modifier.padding(8.dp)
+                                        val unreadCount = chatViewModel.getUnreadCount(userId)
+                                        if (unreadCount > 0) {
+                                            Button(
+                                                onClick = {
+                                                    // Mark messages as read when clicking button
+                                                    chatViewModel.messages.value
+                                                        .filter { msg ->
+                                                            msg.senderId == userId &&
+                                                                    msg.receiverId == chatViewModel.currentUserId &&
+                                                                    !msg.isRead
+                                                        }
+                                                        .forEach { msg ->
+                                                            chatViewModel.markMessageAsRead(msg.id)
+                                                        }
+                                                    onNavigateToMessage(userId, userNotifications.first().fromUsername)
+                                                },
+                                                modifier = Modifier.fillMaxWidth(),
+                                                colors = ButtonDefaults.buttonColors(
+                                                    containerColor = MaterialTheme.colorScheme.surface
+                                                )
                                             ) {
+                                                Column(
+                                                    modifier = Modifier
+                                                        .padding(8.dp),
+                                                    horizontalAlignment = Alignment.CenterHorizontally
+                                                ) {
+                                                    Spacer(modifier = Modifier.height(8.dp))
+                                                    Text(
+                                                        text = "$unreadCount tin nhắn mới",
+                                                        style = MaterialTheme.typography.bodyLarge,
+                                                        color = MaterialTheme.colorScheme.onSurface,
+                                                        modifier = Modifier.align(Alignment.CenterHorizontally)
+                                                    )
+                                                }
+                                            }
+                                        }
+                                        else{
+                                            Column(
+                                                modifier = Modifier
+                                                    .padding(8.dp).fillMaxWidth(),
+                                                horizontalAlignment = Alignment.CenterHorizontally
+                                            )
+                                            {
+                                                Spacer(modifier = Modifier.height(8.dp))
                                                 Text(
-                                                    text = "$unreadMessages tin nhắn mới",
-                                                    style = MaterialTheme.typography.bodyLarge
+                                                    text = "Tin nhắn mới",
+                                                    style = MaterialTheme.typography.bodyLarge,
+                                                    color = MaterialTheme.colorScheme.onSurface,
+                                                    modifier = Modifier.align(Alignment.CenterHorizontally)
                                                 )
                                             }
+
                                         }
                                     }
                                 }
