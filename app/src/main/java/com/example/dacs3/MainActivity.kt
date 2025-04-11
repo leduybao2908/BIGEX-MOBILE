@@ -37,6 +37,7 @@ import androidx.lifecycle.lifecycleScope
 import com.example.dacs3.ui.screens.SocialNetwork.SocialNetwork
 import com.example.dacs3.ui.screens.SocialNetwork.UploadPostScreen
 import com.example.dacs3.ui.screens.VideoCall.*
+import com.example.dacs3.ui.screens.tree.*
 import com.google.firebase.messaging.FirebaseMessaging
 import kotlinx.coroutines.launch
 
@@ -199,9 +200,8 @@ class MainActivity : ComponentActivity() {
                             SocialNetwork(navController = navController)
                         }
 
-
-                        composable(BottomBarScreen.VideoCall.route) {
-                            VideoCallScreen()
+                        composable(BottomBarScreen.tree.route) {
+                            //TreeScreen()
                         }
 
                         composable(BottomBarScreen.Notification.route) {
