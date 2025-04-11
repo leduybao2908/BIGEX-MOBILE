@@ -1,6 +1,10 @@
 package com.example.dacs3.ui.screens.SocialNetwork
 
+import android.graphics.Bitmap
+import android.graphics.ImageDecoder
 import android.net.Uri
+import android.os.Build
+import android.util.Base64
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia
@@ -20,7 +24,7 @@ import com.google.firebase.Timestamp
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
-import java.util.*
+import java.io.ByteArrayOutputStream
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -94,11 +98,30 @@ fun UploadPostScreen(
                 onClick = {
                     if (caption.isNotBlank() && currentUser != null) {
                         isUploading = true
+
+                        var imageBase64: String? = null
+
+                        selectedImageUri?.let { uri ->
+                            val bitmap: Bitmap = if (Build.VERSION.SDK_INT < 28) {
+                                android.provider.MediaStore.Images.Media.getBitmap(
+                                    context.contentResolver, uri
+                                )
+                            } else {
+                                val source = ImageDecoder.createSource(context.contentResolver, uri)
+                                ImageDecoder.decodeBitmap(source)
+                            }
+
+                            val outputStream = ByteArrayOutputStream()
+                            bitmap.compress(Bitmap.CompressFormat.PNG, 100, outputStream)
+                            val byteArray = outputStream.toByteArray()
+                            imageBase64 = Base64.encodeToString(byteArray, Base64.DEFAULT)
+                        }
+
                         val post = hashMapOf(
                             "caption" to caption,
                             "userId" to currentUser.uid,
                             "timestamp" to Timestamp.now(),
-                            "imageUrl" to (selectedImageUri?.toString() ?: "")
+                            "imageBase64" to imageBase64
                         )
 
                         db.collection("posts")

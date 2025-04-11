@@ -11,19 +11,31 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.dacs3.ui.screens.SocialNetwork.components.PostCard
+import com.example.dacs3.ui.screens.SocialNetwork.model.Post
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.Timestamp
 
 @Composable
 fun SocialNetwork(navController: NavController) {
     val firestore = FirebaseFirestore.getInstance()
-    var posts by remember { mutableStateOf<List<Map<String, Any>>>(emptyList()) }
+    var posts by remember { mutableStateOf<List<Post>>(emptyList()) }
 
-    // Tải bài viết từ Firestore
     LaunchedEffect(true) {
         firestore.collection("posts")
             .get()
             .addOnSuccessListener { result ->
-                val list = result.map { it.data }
+                val list = result.mapNotNull { doc ->
+                    try {
+                        Post(
+                            id = doc.id,
+                            caption = doc.getString("caption") ?: "",
+                            imageBase64 = doc.getString("imageBase64"),
+                            timestamp = doc.getTimestamp("timestamp")?.toDate()?.time ?: 0L
+                        )
+                    } catch (e: Exception) {
+                        null
+                    }
+                }
                 posts = list
             }
     }
