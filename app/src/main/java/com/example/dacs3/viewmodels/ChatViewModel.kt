@@ -19,7 +19,8 @@ data class Message(
     val content: String = "",
     val timestamp: Long = System.currentTimeMillis(),
     val senderName: String = "",
-    val senderProfilePicture: String = ""
+    val senderProfilePicture: String = "",
+    var isRead: Boolean = false
 )
 
 class ChatViewModel : ViewModel() {
@@ -83,6 +84,10 @@ class ChatViewModel : ViewModel() {
                 for (messageSnapshot in snapshot.children) {
                     val message = messageSnapshot.getValue(Message::class.java)
                     if (message != null && (message.senderId == currentUserId || message.receiverId == currentUserId)) {
+                        // Tự động đánh dấu tin nhắn là đã đọc nếu người dùng hiện tại là người gửi
+                        if (message.senderId == currentUserId) {
+                            message.isRead = true
+                        }
                         messagesList.add(message)
                         // Tạo thông báo cho tin nhắn mới nếu người nhận là người dùng hiện tại
                         if (message.receiverId == currentUserId && message.timestamp > System.currentTimeMillis() - 5000) {
@@ -124,10 +129,12 @@ class ChatViewModel : ViewModel() {
     }
 
     fun getUnreadCount(friendId: String): Int {
-        return messages.value.count { msg ->
+        val unreadMessages = messages.value.filter { msg ->
             msg.senderId == friendId &&
-            msg.receiverId == currentUserId
+            msg.receiverId == currentUserId &&
+            !msg.isRead
         }
+        return unreadMessages.distinctBy { it.id }.size
     }
 
     fun getLastMessageTime(friendId: String): String? {
@@ -199,4 +206,10 @@ class ChatViewModel : ViewModel() {
             }
         }
     }
+
+    fun markMessageAsRead(messageId: String) {
+        val message = messages.value.find { it.id == messageId } ?: return
+        messagesRef.child(messageId).child("isRead").setValue(true)
+    }
 }
+

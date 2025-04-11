@@ -11,7 +11,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.text.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -21,19 +20,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
-import com.example.dacs3.ui.viewmodels.*
 import com.example.dacs3.data.UserInterest
 import com.example.dacs3.data.VietnamCity
 import java.io.ByteArrayOutputStream
 import java.io.InputStream
 import java.util.*
 import android.app.DatePickerDialog
-import androidx.compose.material.icons.automirrored.filled.*
 import java.text.SimpleDateFormat
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import com.example.dacs3.viewmodels.*
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UpdateProfileScreen(
