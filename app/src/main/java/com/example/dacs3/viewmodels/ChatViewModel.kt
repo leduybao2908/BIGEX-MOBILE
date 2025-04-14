@@ -1,5 +1,6 @@
 package com.example.dacs3.viewmodels
 
+import android.util.*
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.dacs3.data.UserDatabase
@@ -43,7 +44,15 @@ data class Message(
 
     @get:PropertyName("isRead")
     @PropertyName("isRead")
-    var isRead: Boolean = false
+    var isRead: Boolean = false,
+
+    @get:PropertyName("isImage")
+    @PropertyName("isImage")
+    val isImage: Boolean = false,
+
+    @get:PropertyName("reactions")
+    @PropertyName("reactions")
+    val reactions: Map<String, String> = mapOf()
 )
 
 class ChatViewModel : ViewModel() {
@@ -64,6 +73,7 @@ class ChatViewModel : ViewModel() {
     val friends: StateFlow<List<UserDatabaseModel>> = _friends
 
     init {
+        updateUserOnlineStatus()
         loadFriends()
         observeMessages()
         // Khởi tạo coroutine để ghi log tin nhắn chưa đọc mỗi giây
@@ -86,30 +96,51 @@ class ChatViewModel : ViewModel() {
 
         friendsRef.addValueEventListener(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
-                viewModelScope.launch {
-                    val friendsList = mutableListOf<UserDatabaseModel>()
-                    for (friendSnapshot in snapshot.children) {
-                        val friendId = friendSnapshot.key ?: continue
-                        // Fetch friend's user data
-                        database.getReference("users").child(friendId)
-                            .get()
-                            .addOnSuccessListener { userSnapshot ->
-                                val friend = userSnapshot.getValue(UserDatabaseModel::class.java)
-                                if (friend != null) {
-                                    friendsList.add(friend)
-                                    _friends.value = friendsList
+                snapshot.children.forEach { friendSnapshot ->
+                    val friendId = friendSnapshot.key ?: return@forEach
+
+                    // Create a separate listener for each friend's online status
+                    val userRef = database.getReference("users").child(friendId)
+                    userRef.addValueEventListener(object : ValueEventListener {
+                        override fun onDataChange(userSnapshot: DataSnapshot) {
+                            val isOnline = userSnapshot.child("isOnline").getValue(Boolean::class.java) ?: false
+                            val lastOnline = userSnapshot.child("lastOnline").getValue(Long::class.java) ?: 0L
+
+                            // Log the status update
+                            Log.d("ChatViewModel", "Friend $friendId status update - isOnline: $isOnline, lastOnline: $lastOnline")
+
+                            // Update friend data in the list
+                            val friend = userSnapshot.getValue(UserDatabaseModel::class.java)?.copy(
+                                uid = friendId,
+                                isOnline = isOnline
+                            )
+
+                            if (friend != null) {
+                                val currentList = _friends.value.toMutableList()
+                                val index = currentList.indexOfFirst { it.uid == friendId }
+
+                                if (index != -1) {
+                                    currentList[index] = friend
+                                } else {
+                                    currentList.add(friend)
                                 }
+
+                                _friends.value = currentList
                             }
-                    }
+                        }
+
+                        override fun onCancelled(error: DatabaseError) {
+                            Log.e("ChatViewModel", "Error monitoring friend status", error.toException())
+                        }
+                    })
                 }
             }
 
             override fun onCancelled(error: DatabaseError) {
-                // Handle error
+                Log.e("ChatViewModel", "Error loading friends", error.toException())
             }
         })
     }
-
     private fun observeMessages() {
         val currentUserId = auth.currentUser?.uid ?: return
 
@@ -160,7 +191,9 @@ class ChatViewModel : ViewModel() {
                 (msg.senderId == currentUserId && msg.receiverId == friendId)
             }
             .maxByOrNull { it.timestamp }
-            ?.content
+            ?.let { msg ->
+                if (msg.isImage) "Hình ảnh" else msg.content
+            }
     }
 
     fun getUnreadCount(friendId: String): Int {
@@ -169,6 +202,18 @@ class ChatViewModel : ViewModel() {
             msg.receiverId == currentUserId &&
             !msg.isRead
         }.distinctBy { it.id }.size
+    }
+
+    fun addReaction(messageId: String, emoji: String) {
+        val currentUserId = auth.currentUser?.uid ?: return
+        val messageRef = messagesRef.child(messageId)
+        messageRef.child("reactions").child(currentUserId).setValue(emoji)
+    }
+
+    fun removeReaction(messageId: String) {
+        val currentUserId = auth.currentUser?.uid ?: return
+        val messageRef = messagesRef.child(messageId)
+        messageRef.child("reactions").child(currentUserId).removeValue()
     }
 
     fun getLastMessageTime(friendId: String): String? {
@@ -202,7 +247,26 @@ class ChatViewModel : ViewModel() {
         }
     }
 
-    fun sendMessage(receiverId: String, content: String) {
+    // Update the getFriendOnlineStatus function to check lastOnline
+    fun getFriendOnlineStatus(friendId: String): Boolean {
+        val friend = friends.value.find { it.uid == friendId }
+        return friend?.isOnline == true
+    }
+    private fun updateUserOnlineStatus() {
+        val currentUserId = auth.currentUser?.uid ?: return
+        val userRef = database.getReference("users").child(currentUserId)
+
+        // Set online status
+        userRef.child("isOnline").setValue(true)
+        userRef.child("lastOnline").setValue(ServerValue.TIMESTAMP)
+
+        // Set up disconnect hook
+        userRef.child("isOnline").onDisconnect().setValue(false)
+        userRef.child("lastOnline").onDisconnect().setValue(ServerValue.TIMESTAMP)
+    }
+
+
+    fun sendMessage(receiverId: String, content: String, isImage: Boolean = false) {
         val currentUser = auth.currentUser ?: return
         val messageId = messagesRef.push().key ?: return
 
@@ -220,7 +284,8 @@ class ChatViewModel : ViewModel() {
                     "timestamp" to System.currentTimeMillis(),
                     "senderName" to (currentUserData?.username ?: ""),
                     "senderProfilePicture" to (currentUserData?.profilePicture ?: ""),
-                    "isRead" to false
+                    "isRead" to false,
+                    "isImage" to isImage
                 ))
 
                 // Tạo thông báo cho người nhận
@@ -231,7 +296,7 @@ class ChatViewModel : ViewModel() {
                         "type" to "new_message",
                         "fromUserId" to currentUser.uid,
                         "fromUsername" to (currentUserData?.username ?: ""),
-                        "content" to content,
+                        "content" to if (isImage) "Đã gửi một hình ảnh" else content,
                         "timestamp" to System.currentTimeMillis(),
                         "isRead" to false
                     ))
@@ -244,6 +309,11 @@ class ChatViewModel : ViewModel() {
     fun markMessageAsRead(messageId: String) {
         val message = messages.value.find { it.id == messageId } ?: return
         messagesRef.child(messageId).child("isRead").setValue(true)
+    }
+
+    fun getFriendLastOnline(friendId: String): Long {
+        val friend = friends.value.find { it.uid == friendId }
+        return friend?.lastOnline ?: System.currentTimeMillis()
     }
 }
 

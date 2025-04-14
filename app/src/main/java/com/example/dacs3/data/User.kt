@@ -13,5 +13,7 @@ data class User(
     val phone: String = "",
     val interests: List<UserInterest> = emptyList(),
     val city: VietnamCity? = null,
-    val profilePicture: String = ""
+    val profilePicture: String = "",
+    val isOnline: Boolean = false,
+    val lastOnline: Long = System.currentTimeMillis()
 )

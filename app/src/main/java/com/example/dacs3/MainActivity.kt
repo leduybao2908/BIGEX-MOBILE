@@ -204,7 +204,12 @@ class MainActivity : ComponentActivity() {
                         }
 
                         composable(BottomBarScreen.Notification.route) {
-                            NotificationScreen()
+                            NotificationScreen(
+                                onNavigateToMessage = { userId, username ->
+                                    navController.navigate("message/$userId/$username")
+                                }
+
+                            )
                         }
                         composable("upload_post") {
                             UploadPostScreen(

@@ -17,7 +17,6 @@ sealed class BottomNavItem(
 ) {
     object Chat : BottomNavItem("Nhắn tin", com.example.dacs3.R.drawable.ic_chat)
     object RandomCall : BottomNavItem("Mạng xã hội", com.example.dacs3.R.drawable.ic_random_call)
-    object VideoCall : BottomNavItem("Video Call", com.example.dacs3.R.drawable.ic_video_call)
     object Notification : BottomNavItem("Thông báo", com.example.dacs3.R.drawable.ic_notification)
     object Profile : BottomNavItem("Cá nhân", com.example.dacs3.R.drawable.ic_profile)
 }
@@ -37,7 +36,6 @@ fun BottomNavBar(
         val items = listOf(
             BottomNavItem.Chat,
             BottomNavItem.RandomCall,
-            BottomNavItem.VideoCall,
             BottomNavItem.Notification,
             BottomNavItem.Profile
         )
@@ -65,4 +63,4 @@ fun BottomNavBar(
             )
         }
     }
-} 
+}

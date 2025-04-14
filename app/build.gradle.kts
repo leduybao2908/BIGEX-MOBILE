@@ -56,13 +56,7 @@ android {
     packaging {
         jniLibs {
             pickFirsts.add("**/libc++_shared.so")
-            pickFirsts.add("**/libagora-rtc-sdk.so")
-            pickFirsts.add("**/libagora-rtc-sdk-jni.so")
-            pickFirsts.add("**/libagora-soundtouch.so")
-            pickFirsts.add("**/libagora-ffmpeg.so")
-            pickFirsts.add("**/libagora-fdkaac.so")
-            pickFirsts.add("**/libagora-mpg123.so")
-            pickFirsts.add("**/libagora-crypto.so")
+
         }
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
@@ -76,22 +70,8 @@ dependencies {
     implementation("com.google.firebase:firebase-auth-ktx")
     implementation("com.google.firebase:firebase-database-ktx")
     implementation("com.google.firebase:firebase-messaging-ktx")
+    implementation(libs.firebase.messaging)
 
-
-
-    implementation("io.agora.rtc:full-sdk:4.2.6")
-
-    // Cấu hình cho native libraries của Agora
-    fun Packaging.() {
-        pickFirsts.add("**/libc++_shared.so")
-        pickFirsts.add("**/libagora-rtc-sdk.so")
-        pickFirsts.add("**/libagora-rtc-sdk-jni.so")
-        pickFirsts.add("**/libagora-soundtouch.so")
-        pickFirsts.add("**/libagora-ffmpeg.so")
-        pickFirsts.add("**/libagora-fdkaac.so")
-        pickFirsts.add("**/libagora-mpg123.so")
-        pickFirsts.add("**/libagora-crypto.so")
-    }
 
     val roomVersion = "2.6.1"
     val navVersion = "2.7.7"

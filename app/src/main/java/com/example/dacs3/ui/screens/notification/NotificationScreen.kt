@@ -1,5 +1,6 @@
 package com.example.dacs3.ui.screens.notification
 
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -214,7 +215,21 @@ fun NotificationScreen(
                                         else{
                                             Column(
                                                 modifier = Modifier
-                                                    .padding(8.dp).fillMaxWidth(),
+                                                    .padding(8.dp).fillMaxWidth().clickable {
+
+                                                            // Mark messages as read when clicking button
+                                                            chatViewModel.messages.value
+                                                                .filter { msg ->
+                                                                    msg.senderId == userId &&
+                                                                            msg.receiverId == chatViewModel.currentUserId &&
+                                                                            !msg.isRead
+                                                                }
+                                                                .forEach { msg ->
+                                                                    chatViewModel.markMessageAsRead(msg.id)
+                                                                }
+                                                            onNavigateToMessage(userId, userNotifications.first().fromUsername)
+
+                                                    },
                                                 horizontalAlignment = Alignment.CenterHorizontally
                                             )
                                             {
