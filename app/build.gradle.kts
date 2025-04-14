@@ -80,6 +80,7 @@ dependencies {
 
 
     implementation("io.agora.rtc:full-sdk:4.2.6")
+    implementation(libs.androidx.runtime.livedata)
 
     // Cấu hình cho native libraries của Agora
     fun Packaging.() {
@@ -132,8 +133,11 @@ dependencies {
     // Coil
     implementation("io.coil-kt:coil-compose:2.5.0")
 
-    
-    testImplementation("junit:junit:4.13.2")
+    // Gson
+    implementation("com.google.code.gson:gson:2.10.1")
+
+
+    testImplementation("junit:junit:4.13.2") // Add the version here
     androidTestImplementation(libs.androidx.junit.v115)
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
     androidTestImplementation(platform("androidx.compose:compose-bom:2024.02.00"))

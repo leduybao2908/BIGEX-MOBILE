@@ -197,7 +197,7 @@ class MainActivity : ComponentActivity() {
                         }
 
                         composable(BottomBarScreen.tree.route) {
-                            //TreeScreen()
+                            TreeScreen()
                         }
 
                         composable(BottomBarScreen.Notification.route) {
