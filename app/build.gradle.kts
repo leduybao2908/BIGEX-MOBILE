@@ -56,13 +56,7 @@ android {
     packaging {
         jniLibs {
             pickFirsts.add("**/libc++_shared.so")
-            pickFirsts.add("**/libagora-rtc-sdk.so")
-            pickFirsts.add("**/libagora-rtc-sdk-jni.so")
-            pickFirsts.add("**/libagora-soundtouch.so")
-            pickFirsts.add("**/libagora-ffmpeg.so")
-            pickFirsts.add("**/libagora-fdkaac.so")
-            pickFirsts.add("**/libagora-mpg123.so")
-            pickFirsts.add("**/libagora-crypto.so")
+
         }
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
@@ -75,24 +69,9 @@ dependencies {
     implementation(platform("com.google.firebase:firebase-bom:32.7.4"))
     implementation("com.google.firebase:firebase-auth-ktx")
     implementation("com.google.firebase:firebase-database-ktx")
-    implementation(libs.firebase.messaging.ktx)
+    implementation("com.google.firebase:firebase-messaging-ktx")
     implementation(libs.firebase.messaging)
 
-
-    implementation("io.agora.rtc:full-sdk:4.2.6")
-    implementation(libs.androidx.runtime.livedata)
-
-    // Cấu hình cho native libraries của Agora
-    fun Packaging.() {
-        pickFirsts.add("**/libc++_shared.so")
-        pickFirsts.add("**/libagora-rtc-sdk.so")
-        pickFirsts.add("**/libagora-rtc-sdk-jni.so")
-        pickFirsts.add("**/libagora-soundtouch.so")
-        pickFirsts.add("**/libagora-ffmpeg.so")
-        pickFirsts.add("**/libagora-fdkaac.so")
-        pickFirsts.add("**/libagora-mpg123.so")
-        pickFirsts.add("**/libagora-crypto.so")
-    }
 
     val roomVersion = "2.6.1"
     val navVersion = "2.7.7"
@@ -133,11 +112,11 @@ dependencies {
     // Coil
     implementation("io.coil-kt:coil-compose:2.5.0")
 
-    // Gson
-    implementation("com.google.code.gson:gson:2.10.1")
+    implementation("com.google.firebase:firebase-firestore-ktx")
+    implementation("com.google.firebase:firebase-storage-ktx")
 
 
-    testImplementation("junit:junit:4.13.2") // Add the version here
+    testImplementation("junit:junit:4.13.2")
     androidTestImplementation(libs.androidx.junit.v115)
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
     androidTestImplementation(platform("androidx.compose:compose-bom:2024.02.00"))

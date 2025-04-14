@@ -30,6 +30,24 @@ fun ChatScreen(
     val friends by viewModel.friends.collectAsState()
     var searchQuery by remember { mutableStateOf("") }
 
+
+
+    LaunchedEffect(friends) {
+        friends.forEach { friend ->
+            if (viewModel.getUnreadCount(friend.uid) == 0) {
+                viewModel.messages.value
+                    .filter { msg ->
+                        msg.senderId == friend.uid &&
+                                msg.receiverId == viewModel.currentUserId &&
+                                !msg.isRead
+                    }
+                    .forEach { msg ->
+                        viewModel.markMessageAsRead(msg.id)
+                    }
+            }
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -79,7 +97,16 @@ fun ChatScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(vertical = 4.dp),
-                        onClick = { onNavigateToMessage(friend.uid, friend.username) }
+                        onClick = {  viewModel.messages.value
+                            .filter { msg ->
+                                msg.senderId == friend.uid &&
+                                        msg.receiverId == viewModel.currentUserId &&
+                                        !msg.isRead
+                            }
+                            .forEach { msg ->
+                                viewModel.markMessageAsRead(msg.id)
+                            }
+                            onNavigateToMessage(friend.uid, friend.username)  }
                     ) {
                         Row(
                             modifier = Modifier
@@ -88,22 +115,12 @@ fun ChatScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Box(contentAlignment = Alignment.BottomEnd) {
-                                UserAvatar(
-                                    username = friend.username,
-                                    profilePicture = friend.profilePicture,
-                                    size = 56.dp
-                                )
-                                if (friend.isOnline) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(14.dp)
-                                            .clip(CircleShape)
-                                            .background(Color.Green)
-                                            .border(
-                                                2.dp,
-                                                MaterialTheme.colorScheme.surface,
-                                                CircleShape
-                                            )
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    UserAvatar(
+                                        username = friend.username,
+                                        profilePicture = friend.profilePicture,
+                                        size = 56.dp,
+                                        isOnline = friend.isOnline
                                     )
                                 }
                             }
@@ -120,7 +137,14 @@ fun ChatScreen(
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Text(
-                                        text = viewModel.getLastMessage(friend.uid) ?: "",
+                                        text = viewModel.getLastMessage(friend.uid)?.let { message ->
+                                            val lastMessage = viewModel.messages.value.find { it.content == message }
+                                            if (lastMessage?.senderId == viewModel.currentUserId) {
+                                                if (lastMessage?.isImage == true) "Bạn: Hình ảnh" else "Bạn: $message"
+                                            } else {
+                                                if (lastMessage?.isImage == true) "Hình ảnh" else message
+                                            }
+                                        } ?: "",
                                         style = MaterialTheme.typography.bodyMedium,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         maxLines = 1,
@@ -191,3 +215,4 @@ fun ChatScreen(
 
 
 }
+

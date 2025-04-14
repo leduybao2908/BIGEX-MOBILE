@@ -1,4 +1,4 @@
-package com.example.dacs3.ui.viewmodels
+package com.example.dacs3.viewmodels
 
 import android.util.Log
 import androidx.lifecycle.ViewModel
@@ -109,6 +109,23 @@ class NotificationViewModel : ViewModel() {
         if (index != -1) {
             currentList[index] = currentList[index].copy(isRead = true)
             _notifications.value = currentList
+
+            // Cập nhật trạng thái isRead trong Firebase
+            userDatabase.database.getReference("notifications")
+                .child(currentUserId)
+                .orderByChild("timestamp")
+                .equalTo(currentList[index].timestamp.toDouble())
+                .addListenerForSingleValueEvent(object : ValueEventListener {
+                    override fun onDataChange(snapshot: DataSnapshot) {
+                        snapshot.children.forEach { notificationSnapshot ->
+                            notificationSnapshot.ref.child("isRead").setValue(true)
+                        }
+                    }
+
+                    override fun onCancelled(error: DatabaseError) {
+                        Log.e("Notification", "Error updating isRead status", error.toException())
+                    }
+                })
         }
     }
 

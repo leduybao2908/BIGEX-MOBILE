@@ -1,14 +1,11 @@
-package com.example.dacs3.ui.viewmodels
+package com.example.dacs3.viewmodels
 
-import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.dacs3.data.*
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.FirebaseUser
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
@@ -34,10 +31,39 @@ class AuthViewModel(
             userPreferences.getUserFlow().collect { user ->
                 user?.let {
                     _authState.value = AuthState.Success(it)
+                    // Fetch user data from Firebase after successful authentication
+                    auth.currentUser?.let { firebaseUser ->
+                        getUserById(firebaseUser.uid)
+                    }
                 }
             }
         }
     }
+
+    private fun getUserById(userId: String) {
+        viewModelScope.launch {
+            try {
+                val userSnapshot = userDatabase.getUserById(userId)
+                userSnapshot?.let { snapshot ->
+                    val userData = snapshot.getValue(UserDatabaseModel::class.java)
+                    userData?.let { dbUser ->
+                        val currentUser = (authState.value as? AuthState.Success)?.user
+                        val updatedUser = currentUser?.copy(
+                            username = dbUser.username,
+                            profilePicture = dbUser.profilePicture
+                        )
+                        updatedUser?.let {
+                            userPreferences.saveUser(it)
+                            _authState.value = AuthState.Success(it)
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                _authEvent.value = AuthEvent.ShowError("Failed to fetch user data: ${e.message}")
+            }
+        }
+    }
+
 
     fun login(email: String, password: String) {
         viewModelScope.launch {
@@ -56,16 +82,22 @@ class AuthViewModel(
                 
                 val result = auth.signInWithEmailAndPassword(email, password).await()
                 result.user?.let { firebaseUser ->
+                    // Update online status
+                    userDatabase.updateUserStatus(firebaseUser.uid, true)
+                    
                     val user = User(
+                        uid = firebaseUser.uid,
                         email = firebaseUser.email ?: "",
                         username = firebaseUser.displayName ?: "",
                         password = "", // We don't store passwords with Firebase Auth
-
-                        profilePicture = firebaseUser.photoUrl?.toString() ?: ""
+                        profilePicture = firebaseUser.photoUrl?.toString() ?: "",
+                        isOnline = true,
+                        lastOnline = System.currentTimeMillis()
                     )
                     handleLoginSuccess(user)
                 } ?: run {
-                    _authEvent.value = AuthEvent.ShowError("Login failed. Please check your credentials.")
+                    _authEvent.value =
+                        AuthEvent.ShowError("Login failed. Please check your credentials.")
                 }
             } catch (e: Exception) {
                 val errorMessage = when {
@@ -100,7 +132,8 @@ class AuthViewModel(
                     return@launch
                 }
                 if (password.length < 6) {
-                    _authEvent.value = AuthEvent.ShowError("Password must be at least 6 characters long")
+                    _authEvent.value =
+                        AuthEvent.ShowError("Password must be at least 6 characters long")
                     return@launch
                 }
 
@@ -133,7 +166,8 @@ class AuthViewModel(
                     userPreferences.saveUser(user)
                     _authState.value = AuthState.Success(user)
                 } ?: run {
-                    _authEvent.value = AuthEvent.ShowError("Failed to create user. Please try again")
+                    _authEvent.value =
+                        AuthEvent.ShowError("Failed to create user. Please try again")
                 }
             } catch (e: Exception) {
                 val errorMessage = when {
@@ -231,6 +265,8 @@ class AuthViewModel(
 
     private suspend fun handleLoginSuccess(user: User) {
         try {
+            // Update online status in database
+            userDatabase.updateUserStatus(user.uid, true)
             userPreferences.saveUser(user)
             _authState.value = AuthState.Success(user)
         } catch (e: Exception) {

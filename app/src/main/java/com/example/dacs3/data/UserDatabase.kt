@@ -4,7 +4,9 @@ import com.google.firebase.database.*
 import com.google.firebase.database.ktx.database
 import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.tasks.await
+import com.google.firebase.database.IgnoreExtraProperties
 
+@IgnoreExtraProperties
 data class UserDatabaseModel(
     val uid: String = "",
     val email: String = "",
@@ -12,7 +14,8 @@ data class UserDatabaseModel(
     val fullName: String = "",
     val profilePicture: String = "",
     val createdAt: Long = System.currentTimeMillis(),
-    val isOnline: Boolean = true
+    val isOnline: Boolean = false,
+    val lastOnline: Long = System.currentTimeMillis()
 )
 
 class UserDatabase {
@@ -31,7 +34,25 @@ class UserDatabase {
 
     suspend fun updateUserStatus(uid: String, isOnline: Boolean) {
         try {
-            usersRef.child(uid).child("isOnline").setValue(isOnline).await()
+            val userRef = usersRef.child(uid)
+            val updates = hashMapOf<String, Any>(
+                "isOnline" to isOnline,
+                "lastOnline" to if (!isOnline) System.currentTimeMillis() else ServerValue.TIMESTAMP
+            )
+            
+            if (isOnline) {
+                // Khi user online, thiết lập onDisconnect để tự động cập nhật trạng thái offline khi mất kết nối
+                val offlineUpdates = hashMapOf<String, Any>(
+                    "isOnline" to false,
+                    "lastOnline" to ServerValue.TIMESTAMP
+                )
+                userRef.onDisconnect().updateChildren(offlineUpdates)
+            } else {
+                // Khi user offline có chủ ý, hủy onDisconnect handler
+                userRef.onDisconnect().cancel()
+            }
+            
+            userRef.updateChildren(updates).await()
         } catch (e: Exception) {
             throw Exception("Failed to update user status: ${e.message}")
         }

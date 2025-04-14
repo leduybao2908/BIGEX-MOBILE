@@ -28,12 +28,15 @@ import com.example.dacs3.ui.screens.chat.*
 import com.example.dacs3.ui.screens.notification.*
 import com.example.dacs3.ui.screens.profile.*
 import com.example.dacs3.ui.theme.DACS3Theme
-import com.example.dacs3.ui.viewmodels.*
 import android.content.Intent
 import android.net.Uri
+import android.provider.Settings
 import android.util.Log
 import androidx.lifecycle.lifecycleScope
-import com.example.dacs3.ui.screens.tree.*
+import com.example.dacs3.ui.screens.SocialNetwork.SocialNetwork
+import com.example.dacs3.ui.screens.SocialNetwork.UploadPostScreen
+
+import com.example.dacs3.viewmodels.*
 import com.google.firebase.messaging.FirebaseMessaging
 import kotlinx.coroutines.launch
 
@@ -52,7 +55,7 @@ class MainActivity : ComponentActivity() {
                 duration = SnackbarDuration.Long
             ) {
                 // Open app settings
-                val intent = Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
                     data = Uri.fromParts("package", packageName, null)
                 }
                 startActivity(intent)
@@ -193,7 +196,7 @@ class MainActivity : ComponentActivity() {
                         }
 
                         composable(BottomBarScreen.Social.route) {
-                            // SocialScreen()
+                            SocialNetwork(navController = navController)
                         }
 
                         composable(BottomBarScreen.tree.route) {
@@ -201,8 +204,20 @@ class MainActivity : ComponentActivity() {
                         }
 
                         composable(BottomBarScreen.Notification.route) {
-                            NotificationScreen()
+                            NotificationScreen(
+                                onNavigateToMessage = { userId, username ->
+                                    navController.navigate("message/$userId/$username")
+                                }
+
+                            )
                         }
+                        composable("upload_post") {
+                            UploadPostScreen(
+                                onNavigateBack = { navController.popBackStack() },
+                                navController = navController
+                            )
+                        }
+
 
                         composable(
                             route = "message/{uid}/{username}",

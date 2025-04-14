@@ -1,25 +1,21 @@
 package com.example.dacs3.ui.screens.profile
 
+import android.util.*
 import androidx.compose.animation.*
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.layout.*
-import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.draw.*
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.dacs3.ui.components.*
-import com.example.dacs3.ui.viewmodels.*
+import com.example.dacs3.viewmodels.*
 import kotlinx.coroutines.launch
 
 @Composable
@@ -37,6 +33,9 @@ fun ProfileScreen(
 
     LaunchedEffect(user) {
         showProfileInfo = true
+        Log.d("ProfileInfo", "Auth State: $authState")
+        Log.d("ProfileInfo", "User: $user")
+        Log.d("ProfileInfo", "Profile Picture Raw: ${user?.profilePicture}")
     }
 
     Column(
@@ -168,15 +167,26 @@ private fun ProfileInfo(
                 contentAlignment = Alignment.Center
             ) {
                 val user = (authState as? AuthState.Success)?.user
-                UserAvatar(
-                    username = user?.username ?: "",
-                    profilePicture = user?.profilePicture,
-
-                    size = 120.dp,
+                Box(
+                    contentAlignment = Alignment.BottomEnd,
                     modifier = Modifier
-                        .background(MaterialTheme.colorScheme.primaryContainer)
-                )
-                
+                        .size(120.dp)
+                        .clip(CircleShape)
+                ) {
+                    // Log để debug
+                    Log.d("ProfileInfo", "Profile picture: ${user?.profilePicture}")
+                    Log.d("ProfileInfo", "Username: ${user?.username}")
+
+                    if (user != null) {
+                        UserAvatar(
+                            username = user.username ?: "",
+                            profilePicture = user.profilePicture,
+                            size = 120.dp,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
+                }
+
                 IconButton(
                     onClick = onEditClick,
                     modifier = Modifier
