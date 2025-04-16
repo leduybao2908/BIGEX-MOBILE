@@ -35,7 +35,6 @@ fun ProfileScreen(
         showProfileInfo = true
         Log.d("ProfileInfo", "Auth State: $authState")
         Log.d("ProfileInfo", "User: $user")
-        Log.d("ProfileInfo", "Profile Picture Raw: ${user?.profilePicture}")
     }
 
     Column(

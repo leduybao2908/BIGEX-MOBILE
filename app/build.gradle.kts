@@ -60,6 +60,7 @@ android {
         }
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
+            excludes += "META-INF/DEPENDENCIES"
         }
     }
 }
@@ -107,6 +108,7 @@ dependencies {
 
     // Kotlin Serialization
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
+    implementation("com.google.auth:google-auth-library-oauth2-http:1.17.0")
 
     // Material Icons Extended
     implementation("androidx.compose.material:material-icons-extended:1.6.1")
