@@ -4,5 +4,9 @@ data class Post(
     val id: String = "",
     val caption: String = "",
     val imageBase64: String? = null,
-    val timestamp: Long = System.currentTimeMillis()
+    val timestamp: Long = System.currentTimeMillis(),
+    val userId: String = "",
+    val userName: String = "",
+    val userAvatar: String? = null
 )
+

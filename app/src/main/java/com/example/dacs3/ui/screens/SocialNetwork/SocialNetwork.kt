@@ -8,35 +8,56 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+//import androidx.room.util.copy
 import com.example.dacs3.ui.screens.SocialNetwork.components.PostCard
 import com.example.dacs3.ui.screens.SocialNetwork.model.Post
-import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.Timestamp
+import com.google.firebase.database.*
+import com.google.firebase.database.ktx.database
+//import com.google.firebase.firestore.auth.User
+import com.google.firebase.ktx.Firebase
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.withContext
+import com.example.dacs3.data.User
 
 @Composable
 fun SocialNetwork(navController: NavController) {
-    val firestore = FirebaseFirestore.getInstance()
-    var posts by remember { mutableStateOf<List<Post>>(emptyList()) }
+    val realtimeDb = Firebase.database
+    val posts = remember { mutableStateListOf<Post>() }
+    val context = LocalContext.current
 
-    LaunchedEffect(true) {
-        firestore.collection("posts")
-            .get()
-            .addOnSuccessListener { result ->
-                val list = result.mapNotNull { doc ->
-                    try {
-                        Post(
-                            id = doc.id,
-                            caption = doc.getString("caption") ?: "",
-                            imageBase64 = doc.getString("imageBase64"),
-                            timestamp = doc.getTimestamp("timestamp")?.toDate()?.time ?: 0L
-                        )
-                    } catch (e: Exception) {
-                        null
+    // Sử dụng LaunchedEffect để đảm bảo gọi trong Coroutine Scope
+    LaunchedEffect(Unit) {
+        // Sử dụng coroutineScope để làm việc với dữ liệu trong background
+        coroutineScope {
+            val postsRef = realtimeDb.getReference("posts")
+            postsRef.addValueEventListener(object : ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    val list = mutableListOf<Post>()
+                    for (postSnap in snapshot.children) {
+                        val post = postSnap.getValue(Post::class.java)
+                        post?.let { list.add(it.copy(id = postSnap.key ?: "")) }
                     }
+                    // Cập nhật lại trong UI thread
+                    posts.clear()
+                    posts.addAll(list.sortedByDescending { it.timestamp })
                 }
-                posts = list
+
+                override fun onCancelled(error: DatabaseError) {
+                    println("Lỗi khi load bài viết: ${error.message}")
+                }
+            })
+        }
+    }
+
+    fun deletePost(postId: String, onComplete: () -> Unit) {
+        realtimeDb.getReference("posts").child(postId).removeValue()
+            .addOnSuccessListener { onComplete() }
+            .addOnFailureListener { e ->
+                println("Lỗi khi xóa bài: ${e.localizedMessage}")
             }
     }
 
@@ -66,9 +87,21 @@ fun SocialNetwork(navController: NavController) {
                     .padding(paddingValues)
             ) {
                 items(posts.size) { index ->
-                    PostCard(post = posts[index])
+                    PostCard(
+                        post = posts[index],
+                        onEditClick = { post ->
+                            navController.navigate("edit_post/${post.id}")
+                        },
+                        onDeleteClick = { post ->
+                            deletePost(post.id) {
+                                // Realtime sẽ tự cập nhật lại danh sách
+                            }
+                        }
+                    )
                 }
             }
         }
     }
 }
+
+
