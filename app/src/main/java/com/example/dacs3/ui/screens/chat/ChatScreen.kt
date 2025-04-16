@@ -115,22 +115,12 @@ fun ChatScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Box(contentAlignment = Alignment.BottomEnd) {
-                                UserAvatar(
-                                    username = friend.username,
-                                    profilePicture = friend.profilePicture,
-                                    size = 56.dp
-                                )
-                                if (friend.isOnline) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(14.dp)
-                                            .clip(CircleShape)
-                                            .background(Color.Green)
-                                            .border(
-                                                2.dp,
-                                                MaterialTheme.colorScheme.surface,
-                                                CircleShape
-                                            )
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    UserAvatar(
+                                        username = friend.username,
+                                        profilePicture = friend.profilePicture,
+                                        size = 56.dp,
+                                        isOnline = friend.isOnline
                                     )
                                 }
                             }
@@ -147,7 +137,14 @@ fun ChatScreen(
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Text(
-                                        text = viewModel.getLastMessage(friend.uid) ?: "",
+                                        text = viewModel.getLastMessage(friend.uid)?.let { message ->
+                                            val lastMessage = viewModel.messages.value.find { it.content == message }
+                                            if (lastMessage?.senderId == viewModel.currentUserId) {
+                                                if (lastMessage?.isImage == true) "Bạn: Hình ảnh" else "Bạn: $message"
+                                            } else {
+                                                if (lastMessage?.isImage == true) "Hình ảnh" else message
+                                            }
+                                        } ?: "",
                                         style = MaterialTheme.typography.bodyMedium,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         maxLines = 1,

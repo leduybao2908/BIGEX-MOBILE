@@ -35,6 +35,7 @@ import android.util.Log
 import androidx.lifecycle.lifecycleScope
 import com.example.dacs3.ui.screens.SocialNetwork.SocialNetwork
 import com.example.dacs3.ui.screens.SocialNetwork.UploadPostScreen
+import com.example.dacs3.ui.screens.tree.*
 
 import com.example.dacs3.viewmodels.*
 import com.google.firebase.messaging.FirebaseMessaging
@@ -200,11 +201,16 @@ class MainActivity : ComponentActivity() {
                         }
 
                         composable(BottomBarScreen.tree.route) {
-                            //TreeScreen()
+                            TreeScreen()
                         }
 
                         composable(BottomBarScreen.Notification.route) {
-                            NotificationScreen()
+                            NotificationScreen(
+                                onNavigateToMessage = { userId, username ->
+                                    navController.navigate("message/$userId/$username")
+                                }
+
+                            )
                         }
                         composable("upload_post") {
                             UploadPostScreen(
