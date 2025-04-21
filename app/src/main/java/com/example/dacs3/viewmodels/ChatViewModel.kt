@@ -9,8 +9,8 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.launch
 import com.example.dacs3.service.NotificationService
+import kotlinx.coroutines.*
 import java.util.*
 
 data class Message(
@@ -85,7 +85,7 @@ class ChatViewModel : ViewModel() {
                         println("[${friend.username}] có $unreadCount tin nhắn chưa đọc")
                     }
                 }
-                kotlinx.coroutines.delay(1000) // Đợi 1 giây
+                delay(1000) // Đợi 1 giây
             }
         }
     }
@@ -265,6 +265,15 @@ class ChatViewModel : ViewModel() {
         userRef.child("lastOnline").onDisconnect().setValue(ServerValue.TIMESTAMP)
     }
 
+    private suspend fun getUserById(userId: String): UserDatabaseModel? {
+        return try {
+            val snapshot = userDatabase.getUserById(userId)
+            snapshot.getValue(UserDatabaseModel::class.java)?.copy(uid = userId)
+        } catch (e: Exception) {
+            Log.e("ChatViewModel", "Error getting user by ID", e)
+            null
+        }
+    }
 
     fun sendMessage(receiverId: String, content: String, isImage: Boolean = false) {
         val currentUser = auth.currentUser ?: return
@@ -275,6 +284,9 @@ class ChatViewModel : ViewModel() {
                 // Get current user's data from database
                 val currentUserSnapshot = userDatabase.getUserById(currentUser.uid)
                 val currentUserData = currentUserSnapshot.getValue(UserDatabaseModel::class.java)
+                
+                // Get receiver's data
+                val receiverData = getUserById(receiverId)
 
                 messagesRef.child(messageId).setValue(mapOf(
                     "id" to messageId,
@@ -288,20 +300,21 @@ class ChatViewModel : ViewModel() {
                     "isImage" to isImage
                 ))
 
-                // Tạo thông báo cho người nhận
-                database.getReference("notifications")
-                    .child(receiverId)
-                    .push()
-                    .setValue(mapOf(
-                        "type" to "new_message",
-                        "fromUserId" to currentUser.uid,
-                        "fromUsername" to (currentUserData?.username ?: ""),
-                        "content" to if (isImage) "Đã gửi một hình ảnh" else content,
-                        "timestamp" to System.currentTimeMillis(),
-                        "isRead" to false
-                    ))
+                // Send push notification to receiver only if we have their token
+                receiverData?.fcmToken?.let { token ->
+                    if (token.isNotEmpty()) {
+                        notificationService.sendMessageNotification(
+                            token = token,
+                            currentUserData?.username ?: "",
+                            if (isImage) "Đã gửi một hình ảnh" else content,
+                            senderId = currentUser.uid,
+                            senderName = currentUserData?.username ?: "",
+                            messageId = messageId
+                        )
+                    }
+                }
             } catch (e: Exception) {
-                // Handle error
+                Log.e("ChatViewModel", "Error sending message", e)
             }
         }
     }
@@ -316,4 +329,3 @@ class ChatViewModel : ViewModel() {
         return friend?.lastOnline ?: System.currentTimeMillis()
     }
 }
-

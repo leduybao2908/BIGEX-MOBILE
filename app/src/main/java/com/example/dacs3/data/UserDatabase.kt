@@ -15,12 +15,13 @@ data class UserDatabaseModel(
     val profilePicture: String = "",
     val createdAt: Long = System.currentTimeMillis(),
     val isOnline: Boolean = false,
-    val lastOnline: Long = System.currentTimeMillis()
+    val lastOnline: Long = System.currentTimeMillis(),
+    val fcmToken: String = ""
 )
 
 class UserDatabase {
     val database = FirebaseDatabase.getInstance("https://dacs3-5cf79-default-rtdb.asia-southeast1.firebasedatabase.app")
-    private val usersRef = database.getReference("users")
+    val usersRef = database.getReference("users")
     private val friendsRef = database.getReference("friends")
     private val friendRequestsRef = database.getReference("friend_requests")
 

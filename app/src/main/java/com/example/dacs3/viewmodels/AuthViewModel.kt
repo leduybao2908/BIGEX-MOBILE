@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.dacs3.data.*
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.messaging.FirebaseMessaging
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -34,6 +35,14 @@ class AuthViewModel(
                     // Fetch user data from Firebase after successful authentication
                     auth.currentUser?.let { firebaseUser ->
                         getUserById(firebaseUser.uid)
+                        // Get and update FCM token
+                        try {
+                            val fcmToken = FirebaseMessaging.getInstance().token.await()
+                            println("FCM Token updated: $fcmToken") // Log FCM token
+                            userDatabase.usersRef.child(firebaseUser.uid).child("fcmToken").setValue(fcmToken)
+                        } catch (e: Exception) {
+                            println("Failed to update FCM token: ${e.message}")
+                        }
                     }
                 }
             }
@@ -147,13 +156,18 @@ class AuthViewModel(
                     ).await()
                     
                     // Create user profile in Realtime Database
+                    // Get FCM token
+                    val fcmToken = FirebaseMessaging.getInstance().token.await()
+                    println("FCM Token: $fcmToken") // Log FCM token
+                    
                     val userDatabaseModel = UserDatabaseModel(
                         uid = firebaseUser.uid,
                         email = email,
                         username = username,
                         fullName = username, // Sử dụng username làm fullName mặc định
                         createdAt = System.currentTimeMillis(),
-                        isOnline = true
+                        isOnline = true,
+                        fcmToken = fcmToken
                     )
                     userDatabase.createUser(userDatabaseModel)
 
@@ -265,8 +279,14 @@ class AuthViewModel(
 
     private suspend fun handleLoginSuccess(user: User) {
         try {
-            // Update online status in database
+            // Get FCM token
+            val fcmToken = FirebaseMessaging.getInstance().token.await()
+            println("FCM Token: $fcmToken") // Log FCM token
+            
+            // Update online status and FCM token in database
             userDatabase.updateUserStatus(user.uid, true)
+            userDatabase.usersRef.child(user.uid).child("fcmToken").setValue(fcmToken).await()
+            
             userPreferences.saveUser(user)
             _authState.value = AuthState.Success(user)
         } catch (e: Exception) {
