@@ -48,6 +48,8 @@ fun TreeScreen() {
             null -> R.drawable.ground
         }
 
+//        val treeImage = R.drawable.seed
+
         Image(
             painter = painterResource(id = treeImage),
             contentDescription = "Tree",
@@ -57,7 +59,8 @@ fun TreeScreen() {
         Spacer(modifier = Modifier.height(16.dp))
 
         // Water Button
-        Button(onClick = { treeViewModel.waterTree() }) {
+        Button(onClick = {
+            treeViewModel.waterTree() }) {
             Text("Water Tree")
         }
     }
