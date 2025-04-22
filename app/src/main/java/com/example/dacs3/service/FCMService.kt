@@ -25,27 +25,42 @@ class FCMService : FirebaseMessagingService() {
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
         super.onMessageReceived(remoteMessage)
 
-        // Check if message contains data payload
+        // Handle both notification and data payload
+        remoteMessage.notification?.let { notification ->
+            val title = notification.title ?: ""
+            val body = notification.body ?: ""
+            sendNotification(
+                title = title,
+                messageBody = body,
+                senderId = null,
+                messageId = null,
+                notificationType = "general"
+            )
+        }
+
+        // Handle data payload
         if (remoteMessage.data.isNotEmpty()) {
             val title = remoteMessage.data["title"] ?: ""
             val body = remoteMessage.data["body"] ?: ""
             val senderId = remoteMessage.data["senderId"]
             val senderName = remoteMessage.data["senderName"]
             val messageId = remoteMessage.data["messageId"]
+            val notificationType = remoteMessage.data["type"] ?: "message"
 
             // Create notification title using sender's name if available
-            val notificationTitle = if (!senderName.isNullOrEmpty()) {
-                "Message from $senderName"
-            } else {
-                title
+            val notificationTitle = when (notificationType) {
+                "friend_request" -> "Lời mời kết bạn mới"
+                "message" -> if (!senderName.isNullOrEmpty()) "Tin nhắn từ $senderName" else title
+                else -> title
             }
 
-            // Send notification with the message data and extras
+            // Send notification with the data payload
             sendNotification(
                 title = notificationTitle,
                 messageBody = body,
                 senderId = senderId,
-                messageId = messageId
+                messageId = messageId,
+                notificationType = notificationType
             )
         }
     }
@@ -72,12 +87,17 @@ class FCMService : FirebaseMessagingService() {
         title: String,
         messageBody: String,
         senderId: String?,
-        messageId: String?
+        messageId: String?,
+        notificationType: String
     ) {
         val intent = Intent(this, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
-            // Add data for deep linking to message screen
-            data = android.net.Uri.parse("android-app://androidx.navigation/message/${senderId}/Unknown")
+            // Add data for deep linking based on notification type
+            data = when (notificationType) {
+                "friend_request" -> android.net.Uri.parse("android-app://androidx.navigation/notification")
+                "message" -> android.net.Uri.parse("android-app://androidx.navigation/message/${senderId}/Unknown")
+                else -> android.net.Uri.parse("android-app://androidx.navigation/notification")
+            }
         }
 
         val pendingIntent = PendingIntent.getActivity(

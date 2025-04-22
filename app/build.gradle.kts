@@ -66,6 +66,10 @@ android {
 }
 
 dependencies {
+    //VideoCall
+    implementation ("com.github.ZEGOCLOUD:zego_uikit_prebuilt_call_android:+")
+    implementation ("io.agora.rtc:voice-sdk:4.5.0")
+
     // Firebase
     implementation(platform("com.google.firebase:firebase-bom:32.7.4"))
     implementation("com.google.firebase:firebase-auth-ktx")
@@ -74,6 +78,7 @@ dependencies {
     implementation(libs.firebase.messaging)
     implementation(libs.firebase.firestore.ktx)
     implementation(libs.androidx.runtime.livedata)
+    implementation(libs.androidx.appcompat)
 
 
     val roomVersion = "2.6.1"

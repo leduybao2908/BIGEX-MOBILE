@@ -99,7 +99,16 @@ fun NotificationScreen(
                             ) {
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier.fillMaxWidth()
+                                    modifier = Modifier.fillMaxWidth().clickable {
+                                        // Navigate to chat screen when notification is clicked
+                                        onNavigateToMessage(userId, userNotifications.first().fromUsername)
+                                        // Mark notifications as read
+                                        userNotifications.forEach { notification ->
+                                            if (!notification.isRead) {
+                                                notificationViewModel.markAsRead(notification.id)
+                                            }
+                                        }
+                                    }
                                 ) {
                                     // Avatar
                                     UserAvatar(

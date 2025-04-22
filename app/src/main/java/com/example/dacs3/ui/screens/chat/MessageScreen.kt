@@ -30,6 +30,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.dacs3.ui.components.*
 import com.example.dacs3.viewmodels.*
 import androidx.compose.animation.*
+import android.widget.Toast
+import androidx.compose.ui.window.*
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -225,7 +227,9 @@ fun MessageScreen(
         viewModel: ChatViewModel = viewModel()
     ) {
         var showReactionMenu by remember { mutableStateOf(false) }
+        var showImageDialog by remember { mutableStateOf(false) }
         val reactions = listOf("❤️", "👍", "😊", "😢", "😡", "👏")
+        val context = LocalContext.current
 
         Box(
             modifier = Modifier
@@ -250,7 +254,7 @@ fun MessageScreen(
                             modifier = Modifier
                                 .widthIn(max = 340.dp)
                                 .combinedClickable(
-                                    onClick = {},
+                                    onClick = { if (message.isImage) showImageDialog = true },
                                     onLongClick = { showReactionMenu = true }
                                 )
                         ) {
@@ -316,6 +320,71 @@ fun MessageScreen(
                                         }
                                     }
                             )
+                        }
+                    }
+                }
+            }
+
+            // Image Dialog
+            if (showImageDialog && message.isImage) {
+                Dialog(
+                    onDismissRequest = { showImageDialog = false }
+                ) {
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth(0.9f)
+                            .fillMaxHeight(0.8f)
+                            .clip(RoundedCornerShape(16.dp)),
+                        color = MaterialTheme.colorScheme.surface
+                    ) {
+                        Column(
+                            modifier = Modifier.fillMaxSize(),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            val imageBytes = remember(message.content) {
+                                Base64.decode(message.content, Base64.DEFAULT)
+                            }
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .fillMaxWidth()
+                            ) {
+                                Image(
+                                    painter = rememberAsyncImagePainter(imageBytes),
+                                    contentDescription = "Hình ảnh chi tiết",
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentScale = ContentScale.Fit
+                                )
+                            }
+                            Button(
+                                onClick = {
+                                    val filename = "IMG_${System.currentTimeMillis()}.jpg"
+                                    val contentValues = android.content.ContentValues().apply {
+                                        put(android.provider.MediaStore.MediaColumns.DISPLAY_NAME, filename)
+                                        put(android.provider.MediaStore.MediaColumns.MIME_TYPE, "image/jpeg")
+                                        put(android.provider.MediaStore.MediaColumns.RELATIVE_PATH, android.os.Environment.DIRECTORY_PICTURES)
+                                    }
+
+                                    val resolver = context.contentResolver
+                                    val uri = resolver.insert(android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
+
+                                    try {
+                                        uri?.let {
+                                            resolver.openOutputStream(it)?.use { outputStream ->
+                                                outputStream.write(imageBytes)
+                                            }
+                                            Toast.makeText(context, "Đã lưu ảnh", Toast.LENGTH_SHORT).show()
+                                        }
+                                    } catch (e: Exception) {
+                                        Toast.makeText(context, "Lỗi khi lưu ảnh: ${e.message}", Toast.LENGTH_SHORT).show()
+                                    }
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp)
+                            ) {
+                                Text("Tải xuống")
+                            }
                         }
                     }
                 }

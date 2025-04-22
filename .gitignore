@@ -22,3 +22,4 @@ local.properties
 *.pem
 *.key
 google-services.json
+app/src/main/assets/dacs3-5cf79-171f102451e7.json

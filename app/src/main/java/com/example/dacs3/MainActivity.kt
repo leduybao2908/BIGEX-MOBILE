@@ -2,7 +2,6 @@ package com.example.dacs3
 
 import android.Manifest
 import android.content.pm.PackageManager
-import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -30,7 +29,6 @@ import com.example.dacs3.ui.screens.profile.*
 import com.example.dacs3.ui.theme.DACS3Theme
 import android.content.Intent
 import android.net.Uri
-import android.provider.Settings
 import android.util.Log
 import androidx.lifecycle.lifecycleScope
 import com.example.dacs3.ui.screens.SocialNetwork.SocialNetwork
@@ -40,9 +38,15 @@ import com.example.dacs3.ui.screens.tree.*
 import com.example.dacs3.viewmodels.*
 import com.google.firebase.messaging.FirebaseMessaging
 import kotlinx.coroutines.launch
+import android.os.Build
+import android.provider.Settings
+import android.widget.Toast
+import android.app.AlertDialog
 
 class MainActivity : ComponentActivity() {
     private val snackbarHostState = SnackbarHostState()
+
+
 
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -100,6 +104,27 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private fun checkAndRequestOverlayPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (!Settings.canDrawOverlays(this)) {
+                val builder = AlertDialog.Builder(this)
+                builder.setTitle("Permission Required")
+                    .setMessage("We need 'Draw over other apps' permission to enable offline call feature.")
+                    .setPositiveButton("Grant") { _, _ ->
+                        val intent = Intent(
+                            Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                            Uri.parse("package:$packageName")
+                        )
+                        startActivity(intent)
+                    }
+                    .setNegativeButton("Cancel") { dialog, _ ->
+                        dialog.dismiss()
+                        Toast.makeText(this, "Permission denied", Toast.LENGTH_SHORT).show()
+                    }
+                    .show()
+            }
+        }
+    }
     private fun getTestFCMToken() {
         FirebaseMessaging.getInstance().token
             .addOnCompleteListener { task ->
@@ -119,6 +144,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         checkNotificationPermission()
         getTestFCMToken()
+        checkAndRequestOverlayPermission()
         
         val userPreferences = UserPreferences(this)
         val authViewModel = AuthViewModel(userPreferences)

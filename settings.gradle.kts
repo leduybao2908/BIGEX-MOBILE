@@ -9,7 +9,7 @@ pluginManagement {
         }
         mavenCentral()
         gradlePluginPortal()
-        maven { url = uri("https://repo.stringee.com/maven/releases/") } // Thêm Stringee repository
+        // Thêm Stringee repository
     }
 }
 dependencyResolutionManagement {
@@ -17,7 +17,8 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
-        maven { url = uri("https://repo.stringee.com/maven/releases/") } // Thêm Stringee repository
+        maven { url = uri("https://jitpack.io") }
+        maven { url =uri("https://storage.zego.im/maven") }
     }
 }
 

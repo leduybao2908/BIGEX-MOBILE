@@ -14,6 +14,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.*
+import androidx.compose.ui.tooling.preview.*
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.dacs3.ui.components.*
@@ -214,5 +215,14 @@ fun ChatScreen(
     }
 
 
+}
+
+@Preview
+@Composable
+fun ChatScreenPreview() {
+    ChatScreen(
+        onNavigateToAddFriend = {},
+        onNavigateToMessage = { _, _ -> }
+    )
 }
 

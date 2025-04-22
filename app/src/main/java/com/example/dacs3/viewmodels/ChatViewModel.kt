@@ -78,15 +78,7 @@ class ChatViewModel : ViewModel() {
         observeMessages()
         // Khởi tạo coroutine để ghi log tin nhắn chưa đọc mỗi giây
         viewModelScope.launch {
-            while(true) {
-                friends.value.forEach { friend ->
-                    val unreadCount = getUnreadCount(friend.uid)
-                    if (unreadCount > 0) {
-                        println("[${friend.username}] có $unreadCount tin nhắn chưa đọc")
-                    }
-                }
-                delay(1000) // Đợi 1 giây
-            }
+
         }
     }
 

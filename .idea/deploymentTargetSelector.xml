@@ -4,10 +4,24 @@
     <selectionStates>
       <SelectionState runConfigName="app">
         <option name="selectionMode" value="DROPDOWN" />
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
         <DropdownSelection timestamp="2025-04-13T18:04:16.437563Z">
           <Target type="DEFAULT_BOOT">
             <handle>
               <DeviceId pluginId="Default" identifier="serial=emulator-5554;connection=51de10a0" />
+=======
+        <DropdownSelection timestamp="2025-04-17T12:23:24.672683300Z">
+          <Target type="DEFAULT_BOOT">
+            <handle>
+              <DeviceId pluginId="Default" identifier="serial=emulator-5554;connection=dc037dd2" />
+>>>>>>> Stashed changes
+=======
+        <DropdownSelection timestamp="2025-04-17T12:23:24.672683300Z">
+          <Target type="DEFAULT_BOOT">
+            <handle>
+              <DeviceId pluginId="Default" identifier="serial=emulator-5554;connection=dc037dd2" />
+>>>>>>> Stashed changes
             </handle>
           </Target>
         </DropdownSelection>
