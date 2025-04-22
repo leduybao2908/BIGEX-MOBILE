@@ -60,7 +60,9 @@ class ChatViewModel : ViewModel() {
     private val messagesRef = database.getReference("messages")
     private val userDatabase = UserDatabase()
     private val auth = FirebaseAuth.getInstance()
-    private val notificationService = NotificationService()
+    private val notificationService = NotificationService(
+        context = TODO()
+    )
 
     // Expose current user ID
     val currentUserId: String?
