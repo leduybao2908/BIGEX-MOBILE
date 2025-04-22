@@ -33,6 +33,8 @@ import android.util.Log
 import androidx.lifecycle.lifecycleScope
 import com.example.dacs3.ui.screens.SocialNetwork.SocialNetwork
 import com.example.dacs3.ui.screens.SocialNetwork.UploadPostScreen
+import com.example.dacs3.ui.screens.SocialNetwork.FullImageScreen
+import com.example.dacs3.ui.screens.SocialNetwork.EditPostScreen
 import com.example.dacs3.ui.screens.tree.*
 
 import com.example.dacs3.viewmodels.*
@@ -45,8 +47,6 @@ import android.app.AlertDialog
 
 class MainActivity : ComponentActivity() {
     private val snackbarHostState = SnackbarHostState()
-
-
 
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -74,14 +74,12 @@ class MainActivity : ComponentActivity() {
         duration: SnackbarDuration = SnackbarDuration.Short,
         action: (() -> Unit)? = null
     ) {
-        val snackbarHostState = SnackbarHostState()
         lifecycleScope.launch {
-            val result = snackbarHostState.showSnackbar(
+            snackbarHostState.showSnackbar(
                 message = message,
                 actionLabel = actionLabel,
                 duration = duration
-            )
-            if (result == SnackbarResult.ActionPerformed) {
+            ).also {
                 action?.invoke()
             }
         }
@@ -125,6 +123,7 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
     private fun getTestFCMToken() {
         FirebaseMessaging.getInstance().token
             .addOnCompleteListener { task ->
@@ -145,7 +144,7 @@ class MainActivity : ComponentActivity() {
         checkNotificationPermission()
         getTestFCMToken()
         checkAndRequestOverlayPermission()
-        
+
         val userPreferences = UserPreferences(this)
         val authViewModel = AuthViewModel(userPreferences)
 
@@ -171,9 +170,7 @@ class MainActivity : ComponentActivity() {
                         composable(Screen.Login.route) {
                             LoginScreen(
                                 navController = navController,
-                                onLogin = { email, password ->
-                                    authViewModel.login(email, password)
-                                },
+                                onLogin = { email, password -> authViewModel.login(email, password) },
                                 authViewModel = authViewModel
                             )
                         }
@@ -181,9 +178,7 @@ class MainActivity : ComponentActivity() {
                         composable(Screen.SignUp.route) {
                             SignUpScreen(
                                 navController = navController,
-                                onSignUp = { username, email, password ->
-                                    authViewModel.signUp(username, email, password)
-                                },
+                                onSignUp = { username, email, password -> authViewModel.signUp(username, email, password) },
                                 authViewModel = authViewModel
                             )
                         }
@@ -191,9 +186,7 @@ class MainActivity : ComponentActivity() {
                         composable(BottomBarScreen.Profile.route) {
                             ProfileScreen(
                                 authViewModel = authViewModel,
-                                onNavigateToUpdateProfile = {
-                                    navController.navigate("update_profile")
-                                }
+                                onNavigateToUpdateProfile = { navController.navigate("update_profile") }
                             )
                         }
 
@@ -204,23 +197,17 @@ class MainActivity : ComponentActivity() {
                             )
                         }
 
-                        // Add other screen routes here
                         composable(BottomBarScreen.Chat.route) {
                             ChatScreen(
-                                onNavigateToAddFriend = {
-                                    navController.navigate(Screen.AddFriend.route)
-                                },
-                                onNavigateToMessage = { uid, username ->
-                                    navController.navigate("message/$uid/$username")
-                                }
+                                onNavigateToAddFriend = { navController.navigate(Screen.AddFriend.route) },
+                                onNavigateToMessage = { uid, username -> navController.navigate("message/$uid/$username") }
                             )
                         }
 
-                        composable(Screen.AddFriend.route) {
-                            AddFriendScreen(
-                                onNavigateBack = { navController.popBackStack() }
-                            )
+                        composable("full_image") {
+                            FullImageScreen()
                         }
+
 
                         composable(BottomBarScreen.Social.route) {
                             SocialNetwork(navController = navController)
@@ -232,12 +219,22 @@ class MainActivity : ComponentActivity() {
 
                         composable(BottomBarScreen.Notification.route) {
                             NotificationScreen(
-                                onNavigateToMessage = { userId, username ->
-                                    navController.navigate("message/$userId/$username")
-                                }
-
+                                onNavigateToMessage = { userId, username -> navController.navigate("message/$userId/$username") }
                             )
                         }
+
+                        composable(
+                            route = "edit_post/{postId}",
+                            arguments = listOf(navArgument("postId") { type = NavType.StringType })
+                        ) { backStackEntry ->
+                            val postId = backStackEntry.arguments?.getString("postId") ?: ""
+                            EditPostScreen(
+                                navController = navController,
+                                postId = postId,
+                                onNavigateBack = { navController.popBackStack() }
+                            )
+                        }
+
                         composable("upload_post") {
                             UploadPostScreen(
                                 onNavigateBack = { navController.popBackStack() },
@@ -245,14 +242,9 @@ class MainActivity : ComponentActivity() {
                             )
                         }
 
-
                         composable(
                             route = "message/{uid}/{username}",
-                            deepLinks = listOf(
-                                navDeepLink {
-                                    uriPattern = "android-app://androidx.navigation/message/{uid}/{username}"
-                                }
-                            )
+                            deepLinks = listOf(navDeepLink { uriPattern = "android-app://androidx.navigation/message/{uid}/{username}" })
                         ) { backStackEntry ->
                             val uid = backStackEntry.arguments?.getString("uid") ?: return@composable
                             val username = backStackEntry.arguments?.getString("username") ?: return@composable

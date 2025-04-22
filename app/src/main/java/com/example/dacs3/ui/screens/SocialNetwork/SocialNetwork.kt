@@ -11,17 +11,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-//import androidx.room.util.copy
 import com.example.dacs3.ui.screens.SocialNetwork.components.PostCard
 import com.example.dacs3.ui.screens.SocialNetwork.model.Post
+import com.example.dacs3.ui.screens.SocialNetwork.ImageHolder
 import com.google.firebase.database.*
 import com.google.firebase.database.ktx.database
-//import com.google.firebase.firestore.auth.User
 import com.google.firebase.ktx.Firebase
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.withContext
-import com.example.dacs3.data.User
 
 @Composable
 fun SocialNetwork(navController: NavController) {
@@ -29,9 +25,7 @@ fun SocialNetwork(navController: NavController) {
     val posts = remember { mutableStateListOf<Post>() }
     val context = LocalContext.current
 
-    // Sử dụng LaunchedEffect để đảm bảo gọi trong Coroutine Scope
     LaunchedEffect(Unit) {
-        // Sử dụng coroutineScope để làm việc với dữ liệu trong background
         coroutineScope {
             val postsRef = realtimeDb.getReference("posts")
             postsRef.addValueEventListener(object : ValueEventListener {
@@ -41,7 +35,6 @@ fun SocialNetwork(navController: NavController) {
                         val post = postSnap.getValue(Post::class.java)
                         post?.let { list.add(it.copy(id = postSnap.key ?: "")) }
                     }
-                    // Cập nhật lại trong UI thread
                     posts.clear()
                     posts.addAll(list.sortedByDescending { it.timestamp })
                 }
@@ -94,8 +87,12 @@ fun SocialNetwork(navController: NavController) {
                         },
                         onDeleteClick = { post ->
                             deletePost(post.id) {
-                                // Realtime sẽ tự cập nhật lại danh sách
+                                // cập nhật tự động
                             }
+                        },
+                        onImageClick = { imageBase64 ->
+                            ImageHolder.base64Image = imageBase64 // ✅ Lưu tạm ảnh
+                            navController.navigate("full_image") // ✅ Chuyển màn hình
                         }
                     )
                 }
@@ -103,5 +100,3 @@ fun SocialNetwork(navController: NavController) {
         }
     }
 }
-
-

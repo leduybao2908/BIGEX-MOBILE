@@ -16,40 +16,59 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
-import com.google.firebase.auth.ktx.auth
+import com.example.dacs3.ui.screens.SocialNetwork.model.Post
 import com.google.firebase.database.ktx.database
 import com.google.firebase.ktx.Firebase
+import kotlinx.coroutines.tasks.await
 import java.io.ByteArrayOutputStream
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun UploadPostScreen(
+fun EditPostScreen(
     navController: NavController,
+    postId: String,
     onNavigateBack: () -> Unit
 ) {
     val context = LocalContext.current
     val realtimeDb = Firebase.database
-    val currentUser = Firebase.auth.currentUser
+    var originalPost by remember { mutableStateOf<Post?>(null) }
 
     var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
     var caption by remember { mutableStateOf("") }
-    var isUploading by remember { mutableStateOf(false) }
+    var isUpdating by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = PickVisualMedia()
-    ) { uri ->
-        selectedImageUri = uri
+    ) { uri -> selectedImageUri = uri }
+
+    // Load post từ Firebase
+    LaunchedEffect(postId) {
+        val snapshot = realtimeDb.getReference("posts").child(postId).get().await()
+        val post = snapshot.getValue(Post::class.java)
+        post?.let {
+            originalPost = it
+            caption = it.caption
+        }
+    }
+
+    // Decode ảnh base64 thành Bitmap nếu không chọn ảnh mới
+    val displayBitmap = remember(originalPost?.imageBase64) {
+        originalPost?.imageBase64?.takeIf { selectedImageUri == null }?.let {
+            val bytes = Base64.decode(it, Base64.DEFAULT)
+            android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+        }
     }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Đăng bài viết") },
+                title = { Text("Chỉnh sửa bài viết") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Quay lại")
@@ -68,13 +87,23 @@ fun UploadPostScreen(
             Button(onClick = {
                 imagePickerLauncher.launch(PickVisualMediaRequest(PickVisualMedia.ImageOnly))
             }) {
-                Text("Chọn ảnh từ thư viện")
+                Text("Chọn ảnh mới")
             }
 
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Hiển thị ảnh mới hoặc ảnh gốc
             selectedImageUri?.let { uri ->
-                Spacer(modifier = Modifier.height(16.dp))
                 Image(
                     painter = rememberAsyncImagePainter(uri),
+                    contentDescription = null,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(250.dp)
+                )
+            } ?: displayBitmap?.let { bitmap ->
+                Image(
+                    bitmap = bitmap.asImageBitmap(),
                     contentDescription = null,
                     modifier = Modifier
                         .fillMaxWidth()
@@ -95,10 +124,10 @@ fun UploadPostScreen(
 
             Button(
                 onClick = {
-                    if (caption.isNotBlank() && currentUser != null) {
-                        isUploading = true
+                    if (caption.isNotBlank()) {
+                        isUpdating = true
 
-                        var imageBase64: String? = null
+                        var imageBase64: String? = originalPost?.imageBase64
 
                         selectedImageUri?.let { uri ->
                             val bitmap: Bitmap = if (Build.VERSION.SDK_INT < 28) {
@@ -116,47 +145,28 @@ fun UploadPostScreen(
                             imageBase64 = Base64.encodeToString(byteArray, Base64.DEFAULT)
                         }
 
-                        // Lấy userName và avatar từ Firebase
-                        val userRef = realtimeDb.getReference("users").child(currentUser.uid)
-                        userRef.get().addOnSuccessListener { snapshot ->
-                            val userName = snapshot.child("username").getValue(String::class.java) ?: "Không tên"
-                            val userAvatar = snapshot.child("profilePicture").getValue(String::class.java)
+                        val updatedPost = mapOf<String, Any?>(
+                            "caption" to caption,
+                            "imageBase64" to imageBase64
+                        )
 
-                            val postId = realtimeDb.reference.child("posts").push().key
-                            if (postId != null) {
-                                val post = mapOf(
-                                    "caption" to caption,
-                                    "userId" to currentUser.uid,
-                                    "userName" to userName,
-                                    "userAvatar" to userAvatar,
-                                    "timestamp" to System.currentTimeMillis(),
-                                    "imageBase64" to imageBase64
-                                )
-
-                                realtimeDb.reference.child("posts").child(postId)
-                                    .setValue(post)
-                                    .addOnSuccessListener {
-                                        isUploading = false
-                                        caption = ""
-                                        selectedImageUri = null
-                                        navController.popBackStack()
-                                    }
-                                    .addOnFailureListener { e ->
-                                        isUploading = false
-                                        errorMessage = "Lỗi khi lưu trạng thái: ${e.localizedMessage}"
-                                    }
+                        realtimeDb.getReference("posts").child(postId)
+                            .updateChildren(updatedPost)
+                            .addOnSuccessListener {
+                                isUpdating = false
+                                navController.popBackStack()
                             }
-                        }.addOnFailureListener { e ->
-                            isUploading = false
-                            errorMessage = "Không lấy được thông tin người dùng: ${e.localizedMessage}"
-                        }
+                            .addOnFailureListener {
+                                isUpdating = false
+                                errorMessage = "Lỗi khi cập nhật bài viết: ${it.localizedMessage}"
+                            }
                     } else {
                         errorMessage = "Chú thích không được để trống"
                     }
                 },
-                enabled = !isUploading
+                enabled = !isUpdating
             ) {
-                Text(if (isUploading) "Đang đăng..." else "Đăng bài")
+                Text(if (isUpdating) "Đang cập nhật..." else "Cập nhật bài viết")
             }
 
             errorMessage?.let {
