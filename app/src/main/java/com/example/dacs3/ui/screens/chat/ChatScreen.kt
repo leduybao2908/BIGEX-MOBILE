@@ -14,6 +14,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.*
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.*
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -26,12 +27,10 @@ fun ChatScreen(
     modifier: Modifier = Modifier,
     onNavigateToAddFriend: () -> Unit,
     onNavigateToMessage: (String, String) -> Unit,
-    viewModel: ChatViewModel = viewModel()
+    viewModel: ChatViewModel = viewModel(factory = ChatViewModelFactory(LocalContext.current))
 ) {
     val friends by viewModel.friends.collectAsState()
     var searchQuery by remember { mutableStateOf("") }
-
-
 
     LaunchedEffect(friends) {
         friends.forEach { friend ->
@@ -42,9 +41,7 @@ fun ChatScreen(
                                 msg.receiverId == viewModel.currentUserId &&
                                 !msg.isRead
                     }
-                    .forEach { msg ->
-                        viewModel.markMessageAsRead(msg.id)
-                    }
+                    .forEach { msg -> viewModel.markMessageAsRead(msg.id) }
             }
         }
     }
@@ -98,16 +95,17 @@ fun ChatScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(vertical = 4.dp),
-                        onClick = {  viewModel.messages.value
-                            .filter { msg ->
-                                msg.senderId == friend.uid &&
-                                        msg.receiverId == viewModel.currentUserId &&
-                                        !msg.isRead
-                            }
-                            .forEach { msg ->
-                                viewModel.markMessageAsRead(msg.id)
-                            }
-                            onNavigateToMessage(friend.uid, friend.username)  }
+                        onClick = {
+                            // Mark unread messages as read before navigating
+                            viewModel.messages.value
+                                .filter { msg ->
+                                    msg.senderId == friend.uid &&
+                                            msg.receiverId == viewModel.currentUserId &&
+                                            !msg.isRead
+                                }
+                                .forEach { msg -> viewModel.markMessageAsRead(msg.id) }
+                            onNavigateToMessage(friend.uid, friend.username)
+                        }
                     ) {
                         Row(
                             modifier = Modifier
@@ -160,8 +158,7 @@ fun ChatScreen(
                                                 .padding(horizontal = 6.dp, vertical = 2.dp)
                                         ) {
                                             Text(
-                                                text = viewModel.getUnreadCount(friend.uid)
-                                                    .toString(),
+                                                text = viewModel.getUnreadCount(friend.uid).toString(),
                                                 color = MaterialTheme.colorScheme.onPrimary,
                                                 style = MaterialTheme.typography.labelSmall
                                             )
@@ -213,8 +210,6 @@ fun ChatScreen(
             }
         }
     }
-
-
 }
 
 @Preview
@@ -225,4 +220,3 @@ fun ChatScreenPreview() {
         onNavigateToMessage = { _, _ -> }
     )
 }
-

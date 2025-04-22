@@ -1,6 +1,7 @@
 package com.example.dacs3.viewmodels
 
-import android.util.*
+import android.content.Context
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.dacs3.data.UserDatabase
@@ -55,14 +56,12 @@ data class Message(
     val reactions: Map<String, String> = mapOf()
 )
 
-class ChatViewModel : ViewModel() {
+class ChatViewModel(private val context: Context) : ViewModel() {
     private val database = FirebaseDatabase.getInstance("https://dacs3-5cf79-default-rtdb.asia-southeast1.firebasedatabase.app")
     private val messagesRef = database.getReference("messages")
     private val userDatabase = UserDatabase()
     private val auth = FirebaseAuth.getInstance()
-    private val notificationService = NotificationService(
-        context = TODO()
-    )
+    private val notificationService = NotificationService(context)
 
     // Expose current user ID
     val currentUserId: String?
@@ -80,7 +79,7 @@ class ChatViewModel : ViewModel() {
         observeMessages()
         // Khởi tạo coroutine để ghi log tin nhắn chưa đọc mỗi giây
         viewModelScope.launch {
-
+            // Example log statement or other functionality
         }
     }
 
@@ -135,6 +134,7 @@ class ChatViewModel : ViewModel() {
             }
         })
     }
+
     private fun observeMessages() {
         val currentUserId = auth.currentUser?.uid ?: return
 
@@ -182,7 +182,7 @@ class ChatViewModel : ViewModel() {
         return messages.value
             .filter { msg ->
                 (msg.senderId == friendId && msg.receiverId == currentUserId) ||
-                (msg.senderId == currentUserId && msg.receiverId == friendId)
+                        (msg.senderId == currentUserId && msg.receiverId == friendId)
             }
             .maxByOrNull { it.timestamp }
             ?.let { msg ->
@@ -193,8 +193,8 @@ class ChatViewModel : ViewModel() {
     fun getUnreadCount(friendId: String): Int {
         return messages.value.filter { msg ->
             msg.senderId == friendId &&
-            msg.receiverId == currentUserId &&
-            !msg.isRead
+                    msg.receiverId == currentUserId &&
+                    !msg.isRead
         }.distinctBy { it.id }.size
     }
 
@@ -214,7 +214,7 @@ class ChatViewModel : ViewModel() {
         val lastMessage = messages.value
             .filter { msg ->
                 (msg.senderId == friendId && msg.receiverId == currentUserId) ||
-                (msg.senderId == currentUserId && msg.receiverId == friendId)
+                        (msg.senderId == currentUserId && msg.receiverId == friendId)
             }
             .maxByOrNull { it.timestamp }
             ?: return null
@@ -232,7 +232,7 @@ class ChatViewModel : ViewModel() {
             days == 1L -> "Hôm qua"
             else -> {
                 val calendar = Calendar.getInstance().apply { timeInMillis = lastMessage.timestamp }
-                String.format("%02d/%02d/%d", 
+                String.format("%02d/%02d/%d",
                     calendar.get(Calendar.DAY_OF_MONTH),
                     calendar.get(Calendar.MONTH) + 1,
                     calendar.get(Calendar.YEAR)
@@ -241,11 +241,11 @@ class ChatViewModel : ViewModel() {
         }
     }
 
-    // Update the getFriendOnlineStatus function to check lastOnline
     fun getFriendOnlineStatus(friendId: String): Boolean {
         val friend = friends.value.find { it.uid == friendId }
         return friend?.isOnline == true
     }
+
     private fun updateUserOnlineStatus() {
         val currentUserId = auth.currentUser?.uid ?: return
         val userRef = database.getReference("users").child(currentUserId)
@@ -278,7 +278,7 @@ class ChatViewModel : ViewModel() {
                 // Get current user's data from database
                 val currentUserSnapshot = userDatabase.getUserById(currentUser.uid)
                 val currentUserData = currentUserSnapshot.getValue(UserDatabaseModel::class.java)
-                
+
                 // Get receiver's data
                 val receiverData = getUserById(receiverId)
 
