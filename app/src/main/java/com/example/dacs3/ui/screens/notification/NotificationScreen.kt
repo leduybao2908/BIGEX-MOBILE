@@ -18,14 +18,19 @@ import com.example.dacs3.viewmodels.*
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
+import java.time.Instant
+import java.time.ZoneId
 
+fun Long.toLocalDateTime(): LocalDateTime {
+    return LocalDateTime.ofInstant(Instant.ofEpochMilli(this), ZoneId.systemDefault())
+}
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NotificationScreen(
     notificationViewModel: NotificationViewModel = viewModel(),
     addFriendViewModel: AddFriendViewModel = viewModel(),
     onNavigateToMessage: (String, String) -> Unit = { _, _ -> },
-    chatViewModel: ChatViewModel = viewModel(),
+    chatViewModel: ChatViewModel = viewModel() // Giữ lại ChatViewModel để sử dụng
 ) {
     val notifications by notificationViewModel.notifications.collectAsState()
 
@@ -101,31 +106,33 @@ fun NotificationScreen(
                                     verticalAlignment = Alignment.CenterVertically,
                                     modifier = Modifier.fillMaxWidth().clickable {
                                         // Navigate to chat screen when notification is clicked
-                                        onNavigateToMessage(userId, userNotifications.first().fromUsername)
-                                        // Mark notifications as read
-                                        userNotifications.forEach { notification ->
-                                            if (!notification.isRead) {
-                                                notificationViewModel.markAsRead(notification.id)
+                                        if (userNotifications.isNotEmpty()) {
+                                            onNavigateToMessage(userId, userNotifications.first().fromUsername)
+                                            // Mark notifications as read
+                                            userNotifications.forEach { notification ->
+                                                if (!notification.isRead) {
+                                                    notificationViewModel.markAsRead(notification.id)
+                                                }
                                             }
                                         }
                                     }
                                 ) {
                                     // Avatar
                                     UserAvatar(
-                                        username = userNotifications.first().fromUsername,
-                                        profilePicture = userNotifications.first().profilePicture
+                                        username = userNotifications.firstOrNull()?.fromUsername ?: "",
+                                        profilePicture = userNotifications.firstOrNull()?.profilePicture ?: ""
                                     )
                                     Spacer(modifier = Modifier.width(12.dp))
 
                                     Column(modifier = Modifier.weight(1f)) {
                                         Text(
-                                            text = userNotifications.first().fromUsername,
+                                            text = userNotifications.firstOrNull()?.fromUsername ?: "N/A",
                                             style = MaterialTheme.typography.titleMedium
                                         )
                                         Text(
-                                            text = userNotifications.first().timestamp.toLocalDateTime().format(
+                                            text = userNotifications.firstOrNull()?.timestamp?.toLocalDateTime()?.format(
                                                 DateTimeFormatter.ofPattern("HH:mm")
-                                            ),
+                                            ) ?: "Unknown",
                                             style = MaterialTheme.typography.bodySmall,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
@@ -134,7 +141,7 @@ fun NotificationScreen(
 
                                 Spacer(modifier = Modifier.height(8.dp))
 
-                                when (userNotifications.first().type) {
+                                when (userNotifications.firstOrNull()?.type) {
                                     "friend_request" -> {
                                         Text(
                                             text = "Đã gửi lời mời kết bạn",
@@ -150,9 +157,7 @@ fun NotificationScreen(
                                                 onClick = {
                                                     addFriendViewModel.rejectFriendRequest(userId)
                                                     userNotifications.forEach { notification ->
-                                                        notificationViewModel.clearNotification(
-                                                            notification.id
-                                                        )
+                                                        notificationViewModel.clearNotification(notification.id)
                                                     }
                                                 }
                                             ) {
@@ -168,9 +173,7 @@ fun NotificationScreen(
                                                 onClick = {
                                                     addFriendViewModel.acceptFriendRequest(userId)
                                                     userNotifications.forEach { notification ->
-                                                        notificationViewModel.clearNotification(
-                                                            notification.id
-                                                        )
+                                                        notificationViewModel.clearNotification(notification.id)
                                                     }
                                                 }
                                             ) {
@@ -191,15 +194,9 @@ fun NotificationScreen(
                                                 onClick = {
                                                     // Mark messages as read when clicking button
                                                     chatViewModel.messages.value
-                                                        .filter { msg ->
-                                                            msg.senderId == userId &&
-                                                                    msg.receiverId == chatViewModel.currentUserId &&
-                                                                    !msg.isRead
-                                                        }
-                                                        .forEach { msg ->
-                                                            chatViewModel.markMessageAsRead(msg.id)
-                                                        }
-                                                    onNavigateToMessage(userId, userNotifications.first().fromUsername)
+                                                        .filter { msg -> msg.senderId == userId && msg.receiverId == chatViewModel.currentUserId && !msg.isRead }
+                                                        .forEach { msg -> chatViewModel.markMessageAsRead(msg.id) }
+                                                    onNavigateToMessage(userId, userNotifications.firstOrNull()?.fromUsername ?: "")
                                                 },
                                                 modifier = Modifier.fillMaxWidth(),
                                                 colors = ButtonDefaults.buttonColors(
@@ -220,28 +217,17 @@ fun NotificationScreen(
                                                     )
                                                 }
                                             }
-                                        }
-                                        else{
+                                        } else {
                                             Column(
                                                 modifier = Modifier
                                                     .padding(8.dp).fillMaxWidth().clickable {
-
-                                                            // Mark messages as read when clicking button
-                                                            chatViewModel.messages.value
-                                                                .filter { msg ->
-                                                                    msg.senderId == userId &&
-                                                                            msg.receiverId == chatViewModel.currentUserId &&
-                                                                            !msg.isRead
-                                                                }
-                                                                .forEach { msg ->
-                                                                    chatViewModel.markMessageAsRead(msg.id)
-                                                                }
-                                                            onNavigateToMessage(userId, userNotifications.first().fromUsername)
-
+                                                        chatViewModel.messages.value
+                                                            .filter { msg -> msg.senderId == userId && msg.receiverId == chatViewModel.currentUserId && !msg.isRead }
+                                                            .forEach { msg -> chatViewModel.markMessageAsRead(msg.id) }
+                                                        onNavigateToMessage(userId, userNotifications.firstOrNull()?.fromUsername ?: "")
                                                     },
                                                 horizontalAlignment = Alignment.CenterHorizontally
-                                            )
-                                            {
+                                            ) {
                                                 Spacer(modifier = Modifier.height(8.dp))
                                                 Text(
                                                     text = "Tin nhắn mới",
@@ -250,7 +236,6 @@ fun NotificationScreen(
                                                     modifier = Modifier.align(Alignment.CenterHorizontally)
                                                 )
                                             }
-
                                         }
                                     }
                                 }
@@ -260,22 +245,6 @@ fun NotificationScreen(
                 }
             }
         }
-
-        LaunchedEffect(notifications) {
-            notifications.forEach { notification ->
-                if (!notification.isRead) {
-                    notificationViewModel.markAsRead(notification.id)
-                }
-            }
-        }
     }
 }
 
-
-// Add extension function to convert timestamp to LocalDateTime
-private fun Long.toLocalDateTime(): LocalDateTime {
-    return LocalDateTime.ofInstant(
-        java.time.Instant.ofEpochMilli(this),
-        java.time.ZoneId.systemDefault()
-    )
-}
