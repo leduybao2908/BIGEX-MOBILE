@@ -40,6 +40,7 @@ fun MessageScreen(
     friendId: String,
     friendUsername: String,
     onNavigateBack: () -> Unit,
+    onNavigateToVoiceCall: (String, String) -> Unit = { _, _ -> },
     viewModel: ChatViewModel = viewModel(),
     notificationViewModel: NotificationViewModel = viewModel()
 ) {
@@ -117,7 +118,17 @@ fun MessageScreen(
                         }
                     },
                     actions = {
-
+                        IconButton(
+                            onClick = {
+                                onNavigateToVoiceCall(friendId, friendUsername)
+                            }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Call,
+                                contentDescription = "Voice Call",
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
                     }
                 )
             }
