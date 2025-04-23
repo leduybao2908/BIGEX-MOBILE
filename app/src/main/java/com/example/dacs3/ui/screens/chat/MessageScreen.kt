@@ -40,17 +40,32 @@ fun MessageScreen(
     friendId: String,
     friendUsername: String,
     onNavigateBack: () -> Unit,
-    viewModel: ChatViewModel = viewModel(),
+    onNavigateToVoiceCall: (String, String) -> Unit = { _, _ -> },
+    viewModel: ChatViewModel = viewModel(factory = ChatViewModelFactory(LocalContext.current)),
     notificationViewModel: NotificationViewModel = viewModel()
 ) {
+    DisposableEffect(Unit) {
+        onDispose {
+            try {
+                // Cleanup resources when the composable is disposed
+                viewModel.cleanup()
+            } catch (e: Exception) {
+                android.util.Log.e("MessageScreen", "Error during cleanup: ${e.message}")
+            }
+        }
+    }
 
         val messages by viewModel.messages.collectAsState()
         var messageText by remember { mutableStateOf("") }
         val listState = rememberLazyListState()
 
         LaunchedEffect(messages) {
-            if (messages.isNotEmpty()) {
-                listState.animateScrollToItem(0)
+            try {
+                if (messages.isNotEmpty()) {
+                    listState.animateScrollToItem(0)
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("MessageScreen", "Error scrolling to item: ${e.message}")
             }
         }
 
@@ -117,7 +132,17 @@ fun MessageScreen(
                         }
                     },
                     actions = {
-
+                        IconButton(
+                            onClick = {
+                                onNavigateToVoiceCall(friendId, friendUsername)
+                            }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Call,
+                                contentDescription = "Voice Call",
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
                     }
                 )
             }
@@ -224,7 +249,7 @@ fun MessageScreen(
     private fun MessageItem(
         message: Message,
         isCurrentUser: Boolean,
-        viewModel: ChatViewModel = viewModel()
+        viewModel: ChatViewModel = viewModel(factory = ChatViewModelFactory(LocalContext.current))
     ) {
         var showReactionMenu by remember { mutableStateOf(false) }
         var showImageDialog by remember { mutableStateOf(false) }

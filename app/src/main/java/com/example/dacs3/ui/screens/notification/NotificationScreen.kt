@@ -31,6 +31,7 @@ fun NotificationScreen(
     notificationViewModel: NotificationViewModel = viewModel(),
     addFriendViewModel: AddFriendViewModel = viewModel(),
     onNavigateToMessage: (String, String) -> Unit = { _, _ -> },
+    chatViewModel: ChatViewModel = viewModel(factory = ChatViewModelFactory(LocalContext.current)) // Giữ lại ChatViewModel để sử dụng
 ) {
     val context = LocalContext.current
     val chatViewModel: ChatViewModel = viewModel(

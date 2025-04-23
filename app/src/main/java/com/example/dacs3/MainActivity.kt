@@ -251,7 +251,8 @@ class MainActivity : ComponentActivity() {
                             MessageScreen(
                                 friendId = uid,
                                 friendUsername = username,
-                                onNavigateBack = { navController.popBackStack() }
+                                onNavigateBack = { navController.popBackStack() },
+
                             )
                         }
                     }

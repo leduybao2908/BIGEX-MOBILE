@@ -11,12 +11,12 @@ import android.os.Build
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.example.dacs3.R
+import com.example.dacs3.data.*
 import com.google.auth.oauth2.GoogleCredentials
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import okhttp3.*
 import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.OkHttpClient
-import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
 import java.io.IOException
@@ -27,7 +27,8 @@ class NotificationService(private val context: Context) {
     private val client = OkHttpClient()
     private val jsonMediaType = "application/json; charset=utf-8".toMediaType()
     private val TAG = "NotificationService"
-    private val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+    private val notificationManager =
+        context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
     private val channelId = "tree_watering_channel"
 
     companion object {
@@ -152,14 +153,55 @@ class NotificationService(private val context: Context) {
             AlarmManager.INTERVAL_DAY,
             pendingIntent
         )
-    }
-}
+        fun sendNotification(
+            token: String,
+            title: String,
+            body: String,
+            data: Map<String, String?>
+        ) {
+            val json = JSONObject().apply {
+                put("to", token)
+                put("notification", JSONObject().apply {
+                    put("title", title)
+                    put("body", body)
+                })
+                put("data", JSONObject(data))
+            }
 
-class WateringReminderReceiver : BroadcastReceiver() {
-    override fun onReceive(context: Context, intent: Intent) {
-        val notificationService = NotificationService(context)
-        val title = intent.getStringExtra("title") ?: "Nhắc nhở tưới cây"
-        val body = intent.getStringExtra("body") ?: "Đã đến giờ tưới cây!"
-        notificationService.showLocalNotification(title, body)
+            val requestBody = json.toString().toRequestBody(jsonMediaType)
+
+            val request = Request.Builder()
+                .url(FirebaseConfig.DATABASE_URL)
+                .post(requestBody)
+                .addHeader("Authorization", "key=${FirebaseConfig.FCM_SERVER_KEY}")
+                .addHeader("Content-Type", "application/json")
+                .build()
+
+            client.newCall(request).enqueue(object : Callback {
+                override fun onFailure(call: Call, e: IOException) {
+                    Log.e(TAG, "Failed to send notification: ${e.message}")
+                }
+
+                override fun onResponse(call: Call, response: Response) {
+                    if (!response.isSuccessful) {
+                        Log.e(
+                            TAG,
+                            "Notification failed: ${response.code}, ${response.body?.string()}"
+                        )
+                    } else {
+                        Log.d(TAG, "Notification sent successfully")
+                    }
+                }
+            })
+        }
+    }
+
+    class WateringReminderReceiver : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            val notificationService = NotificationService(context)
+            val title = intent.getStringExtra("title") ?: "Nhắc nhở tưới cây"
+            val body = intent.getStringExtra("body") ?: "Đã đến giờ tưới cây!"
+            notificationService.showLocalNotification(title, body)
+        }
     }
 }
