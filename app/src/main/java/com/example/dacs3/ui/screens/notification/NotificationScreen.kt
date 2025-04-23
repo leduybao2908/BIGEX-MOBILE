@@ -11,6 +11,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.dacs3.ui.components.*
@@ -30,7 +31,7 @@ fun NotificationScreen(
     notificationViewModel: NotificationViewModel = viewModel(),
     addFriendViewModel: AddFriendViewModel = viewModel(),
     onNavigateToMessage: (String, String) -> Unit = { _, _ -> },
-    chatViewModel: ChatViewModel = viewModel() // Giữ lại ChatViewModel để sử dụng
+    chatViewModel: ChatViewModel = viewModel(factory = ChatViewModelFactory(LocalContext.current)) // Giữ lại ChatViewModel để sử dụng
 ) {
     val notifications by notificationViewModel.notifications.collectAsState()
 

@@ -57,6 +57,7 @@ data class Message(
 )
 
 class ChatViewModel(private val context: Context) : ViewModel() {
+    private var onlineStatusJob: Job? = null
     private val database = FirebaseDatabase.getInstance("https://dacs3-5cf79-default-rtdb.asia-southeast1.firebasedatabase.app")
     private val messagesRef = database.getReference("messages")
     private val userDatabase = UserDatabase()
@@ -74,12 +75,10 @@ class ChatViewModel(private val context: Context) : ViewModel() {
     val friends: StateFlow<List<UserDatabaseModel>> = _friends
 
     init {
-        updateUserOnlineStatus()
-        loadFriends()
-        observeMessages()
-        // Khởi tạo coroutine để ghi log tin nhắn chưa đọc mỗi giây
-        viewModelScope.launch {
-            // Example log statement or other functionality
+        onlineStatusJob = viewModelScope.launch {
+            updateUserOnlineStatus()
+            loadFriends()
+            observeMessages()
         }
     }
 
@@ -244,6 +243,21 @@ class ChatViewModel(private val context: Context) : ViewModel() {
     fun getFriendOnlineStatus(friendId: String): Boolean {
         val friend = friends.value.find { it.uid == friendId }
         return friend?.isOnline == true
+    }
+
+    fun cleanup() {
+        onlineStatusJob?.cancel()
+        viewModelScope.launch {
+            val currentUserId = auth.currentUser?.uid ?: return@launch
+            database.getReference("users")
+                .child(currentUserId)
+                .child("isOnline")
+                .setValue(false)
+            database.getReference("users")
+                .child(currentUserId)
+                .child("lastOnline")
+                .setValue(System.currentTimeMillis())
+        }
     }
 
     private fun updateUserOnlineStatus() {
