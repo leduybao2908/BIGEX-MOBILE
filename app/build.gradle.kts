@@ -79,6 +79,8 @@ dependencies {
     implementation(libs.firebase.firestore.ktx)
     implementation(libs.androidx.runtime.livedata)
     implementation(libs.androidx.appcompat)
+    implementation(libs.androidx.media3.common.ktx)
+    implementation(libs.firebase.crashlytics.buildtools)
 
 
     val roomVersion = "2.6.1"

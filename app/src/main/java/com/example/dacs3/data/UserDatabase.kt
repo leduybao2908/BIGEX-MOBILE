@@ -1,5 +1,4 @@
-package com.example.dacs3.data
-
+import android.util.Log
 import com.google.firebase.database.*
 import com.google.firebase.database.ktx.database
 import com.google.firebase.ktx.Firebase
@@ -40,19 +39,17 @@ class UserDatabase {
                 "isOnline" to isOnline,
                 "lastOnline" to if (!isOnline) System.currentTimeMillis() else ServerValue.TIMESTAMP
             )
-            
+
             if (isOnline) {
-                // Khi user online, thiết lập onDisconnect để tự động cập nhật trạng thái offline khi mất kết nối
                 val offlineUpdates = hashMapOf<String, Any>(
                     "isOnline" to false,
                     "lastOnline" to ServerValue.TIMESTAMP
                 )
                 userRef.onDisconnect().updateChildren(offlineUpdates)
             } else {
-                // Khi user offline có chủ ý, hủy onDisconnect handler
                 userRef.onDisconnect().cancel()
             }
-            
+
             userRef.updateChildren(updates).await()
         } catch (e: Exception) {
             throw Exception("Failed to update user status: ${e.message}")
@@ -67,14 +64,27 @@ class UserDatabase {
         }
     }
 
-    fun observeUsers(onDataChange: (List<UserDatabaseModel>) -> Unit, onError: (DatabaseError) -> Unit) {
+    fun observeUsers(
+        onDataChange: (List<UserDatabaseModel>) -> Unit,
+        onError: (DatabaseError) -> Unit
+    ) {
         usersRef.addValueEventListener(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 val usersList = mutableListOf<UserDatabaseModel>()
                 for (userSnapshot in snapshot.children) {
-                    val user = userSnapshot.getValue(UserDatabaseModel::class.java)
-                    if (user != null) {
-                        usersList.add(user)
+                    try {
+                        // Bỏ qua nếu không phải object
+                        if (!userSnapshot.hasChildren()) {
+                            Log.e("observeUsers", "Invalid user at ${userSnapshot.key}: ${userSnapshot.value}")
+                            continue
+                        }
+
+                        val user = userSnapshot.getValue(UserDatabaseModel::class.java)
+                        if (user != null) {
+                            usersList.add(user)
+                        }
+                    } catch (e: Exception) {
+                        Log.e("observeUsers", "Error parsing user at ${userSnapshot.key}", e)
                     }
                 }
                 onDataChange(usersList)
@@ -101,10 +111,7 @@ class UserDatabase {
 
     suspend fun acceptFriendRequest(currentUserId: String, fromUserId: String) {
         try {
-            // Remove the friend request
             friendRequestsRef.child(currentUserId).child(fromUserId).removeValue().await()
-            
-            // Create bidirectional friend relationship
             val updates = hashMapOf<String, Any>(
                 "$currentUserId/$fromUserId" to true,
                 "$fromUserId/$currentUserId" to true

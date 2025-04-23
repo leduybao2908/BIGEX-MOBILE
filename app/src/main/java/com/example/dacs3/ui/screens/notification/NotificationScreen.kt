@@ -11,6 +11,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.dacs3.ui.components.*
@@ -30,11 +31,14 @@ fun NotificationScreen(
     notificationViewModel: NotificationViewModel = viewModel(),
     addFriendViewModel: AddFriendViewModel = viewModel(),
     onNavigateToMessage: (String, String) -> Unit = { _, _ -> },
-    chatViewModel: ChatViewModel = viewModel() // Giữ lại ChatViewModel để sử dụng
 ) {
+    val context = LocalContext.current
+    val chatViewModel: ChatViewModel = viewModel(
+        factory = ChatViewModelFactory(context)
+    )
+
     val notifications by notificationViewModel.notifications.collectAsState()
 
-    // Nhóm thông báo theo thời gian
     val groupedNotifications = notifications.groupBy { notification ->
         val now = LocalDateTime.now()
         val notificationTime = notification.timestamp.toLocalDateTime()
@@ -104,20 +108,19 @@ fun NotificationScreen(
                             ) {
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier.fillMaxWidth().clickable {
-                                        // Navigate to chat screen when notification is clicked
-                                        if (userNotifications.isNotEmpty()) {
-                                            onNavigateToMessage(userId, userNotifications.first().fromUsername)
-                                            // Mark notifications as read
-                                            userNotifications.forEach { notification ->
-                                                if (!notification.isRead) {
-                                                    notificationViewModel.markAsRead(notification.id)
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable {
+                                            if (userNotifications.isNotEmpty()) {
+                                                onNavigateToMessage(userId, userNotifications.first().fromUsername)
+                                                userNotifications.forEach { notification ->
+                                                    if (!notification.isRead) {
+                                                        notificationViewModel.markAsRead(notification.id)
+                                                    }
                                                 }
                                             }
                                         }
-                                    }
                                 ) {
-                                    // Avatar
                                     UserAvatar(
                                         username = userNotifications.firstOrNull()?.fromUsername ?: "",
                                         profilePicture = userNotifications.firstOrNull()?.profilePicture ?: ""
