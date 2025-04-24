@@ -8,15 +8,41 @@ import com.google.firebase.database.IgnoreExtraProperties
 
 @IgnoreExtraProperties
 data class UserDatabaseModel(
-    val uid: String = "",
-    val email: String = "",
-    val username: String = "",
-    val fullName: String = "",
-    val profilePicture: String = "",
-    val createdAt: Long = System.currentTimeMillis(),
-    val isOnline: Boolean = false,
-    val lastOnline: Long = System.currentTimeMillis(),
-    val fcmToken: String = ""
+    @get:PropertyName("uid")
+    @set:PropertyName("uid")
+    var uid: String = "",
+
+    @get:PropertyName("email")
+    @set:PropertyName("email")
+    var email: String = "",
+
+    @get:PropertyName("username")
+    @set:PropertyName("username")
+    var username: String = "",
+
+    @get:PropertyName("fullName")
+    @set:PropertyName("fullName")
+    var fullName: String = "",
+
+    @get:PropertyName("profilePicture")
+    @set:PropertyName("profilePicture")
+    var profilePicture: String = "",
+
+    @get:PropertyName("createdAt")
+    @set:PropertyName("createdAt")
+    var createdAt: Long = System.currentTimeMillis(),
+
+    @get:PropertyName("isOnline")
+    @set:PropertyName("isOnline")
+    var isOnline: Boolean = false,
+
+    @get:PropertyName("lastOnline")
+    @set:PropertyName("lastOnline")
+    var lastOnline: Long = System.currentTimeMillis(),
+
+    @get:PropertyName("fcmToken")
+    @set:PropertyName("fcmToken")
+    var fcmToken: String = ""
 )
 
 class UserDatabase {
@@ -70,14 +96,37 @@ class UserDatabase {
     fun observeUsers(onDataChange: (List<UserDatabaseModel>) -> Unit, onError: (DatabaseError) -> Unit) {
         usersRef.addValueEventListener(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
-                val usersList = mutableListOf<UserDatabaseModel>()
-                for (userSnapshot in snapshot.children) {
-                    val user = userSnapshot.getValue(UserDatabaseModel::class.java)
-                    if (user != null) {
-                        usersList.add(user)
+                try {
+                    val usersList = mutableListOf<UserDatabaseModel>()
+                    for (userSnapshot in snapshot.children) {
+                        try {
+                            // Lấy dữ liệu dưới dạng Map
+                            val userData = userSnapshot.getValue() as? Map<String, Any>
+                            if (userData != null) {
+                                // Chuyển đổi dữ liệu từ Map sang UserDatabaseModel một cách thủ công
+                                val user = UserDatabaseModel(
+                                    uid = userData["uid"]?.toString() ?: "",
+                                    email = userData["email"]?.toString() ?: "",
+                                    username = userData["username"]?.toString() ?: "",
+                                    fullName = userData["fullName"]?.toString() ?: "",
+                                    profilePicture = userData["profilePicture"]?.toString() ?: "",
+                                    createdAt = (userData["createdAt"] as? Long) ?: System.currentTimeMillis(),
+                                    isOnline = (userData["isOnline"] as? Boolean) ?: false,
+                                    lastOnline = (userData["lastOnline"] as? Long) ?: System.currentTimeMillis(),
+                                    fcmToken = userData["fcmToken"]?.toString() ?: ""
+                                )
+                                usersList.add(user)
+                            }
+                        } catch (e: Exception) {
+                            // Log lỗi cho từng user nhưng vẫn tiếp tục xử lý các user khác
+                            println("Error converting user data: ${e.message}")
+                        }
                     }
+                    onDataChange(usersList)
+                } catch (e: Exception) {
+                    // Nếu có lỗi nghiêm trọng, gọi onError
+                    onError(DatabaseError.fromException(e))
                 }
-                onDataChange(usersList)
             }
 
             override fun onCancelled(error: DatabaseError) {
@@ -88,11 +137,31 @@ class UserDatabase {
 
     suspend fun sendFriendRequest(fromUserId: String, toUserId: String) {
         try {
+            // Kiểm tra xem yêu cầu kết bạn đã tồn tại chưa
+            val existingRequest = friendRequestsRef.child(toUserId).child(fromUserId).get().await()
+            if (existingRequest.exists()) {
+                throw Exception("Friend request already sent")
+            }
+
+            // Kiểm tra xem đã là bạn bè chưa
+            val existingFriendship = friendsRef.child(fromUserId).child(toUserId).get().await()
+            if (existingFriendship.exists()) {
+                throw Exception("Users are already friends")
+            }
+
+            // Kiểm tra xem người dùng có tồn tại không
+            val toUser = usersRef.child(toUserId).get().await()
+            if (!toUser.exists()) {
+                throw Exception("User not found")
+            }
+
             val requestData = hashMapOf<String, Any>(
                 "fromUserId" to fromUserId,
                 "status" to "pending",
                 "timestamp" to ServerValue.TIMESTAMP
             )
+
+            // Gửi yêu cầu kết bạn
             friendRequestsRef.child(toUserId).child(fromUserId).setValue(requestData).await()
         } catch (e: Exception) {
             throw Exception("Failed to send friend request: ${e.message}")

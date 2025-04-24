@@ -223,6 +223,12 @@ class MainActivity : ComponentActivity() {
                             )
                         }
 
+                        composable(Screen.AddFriend.route) {
+                            AddFriendScreen(
+                                onNavigateBack = { navController.popBackStack() }
+                            )
+                        }
+
                         composable(
                             route = "edit_post/{postId}",
                             arguments = listOf(navArgument("postId") { type = NavType.StringType })
