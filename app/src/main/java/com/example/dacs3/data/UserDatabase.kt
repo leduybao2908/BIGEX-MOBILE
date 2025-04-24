@@ -50,6 +50,7 @@ class UserDatabase {
     val usersRef = database.getReference("users")
     private val friendsRef = database.getReference("friends")
     private val friendRequestsRef = database.getReference("friend_requests")
+    private val notificationsRef = database.getReference("notifications")
 
     suspend fun createUser(user: UserDatabaseModel) {
         try {
@@ -216,6 +217,43 @@ class UserDatabase {
             usersRef.child(userId).get().await()
         } catch (e: Exception) {
             throw Exception("Failed to get user data: ${e.message}")
+        }
+    }
+
+    suspend fun saveMessageNotification(toUserId: String, fromUserId: String, fromUsername: String) {
+        try {
+            val notificationData = hashMapOf<String, Any>(
+                "type" to "new_message",
+                "fromUserId" to fromUserId,
+                "fromUsername" to fromUsername,
+                "timestamp" to ServerValue.TIMESTAMP,
+                "isRead" to false
+            )
+            
+            val notificationKey = notificationsRef.child(toUserId).push().key
+            if (notificationKey != null) {
+                notificationsRef.child(toUserId).child(notificationKey).setValue(notificationData).await()
+            } else {
+                throw Exception("Failed to generate notification key")
+            }
+        } catch (e: Exception) {
+            throw Exception("Failed to save message notification: ${e.message}")
+        }
+    }
+
+    suspend fun markNotificationAsRead(userId: String, notificationId: String) {
+        try {
+            notificationsRef.child(userId).child(notificationId).child("isRead").setValue(true).await()
+        } catch (e: Exception) {
+            throw Exception("Failed to mark notification as read: ${e.message}")
+        }
+    }
+
+    suspend fun deleteNotification(userId: String, notificationId: String) {
+        try {
+            notificationsRef.child(userId).child(notificationId).removeValue().await()
+        } catch (e: Exception) {
+            throw Exception("Failed to delete notification: ${e.message}")
         }
     }
 }

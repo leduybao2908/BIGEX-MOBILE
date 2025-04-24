@@ -308,6 +308,13 @@ class ChatViewModel(private val context: Context) : ViewModel() {
                     "isImage" to isImage
                 ))
 
+                // Lưu thông báo tin nhắn mới
+                userDatabase.saveMessageNotification(
+                    toUserId = receiverId,
+                    fromUserId = currentUser.uid,
+                    fromUsername = currentUserData?.username ?: ""
+                )
+
                 // Send push notification to receiver only if we have their token
                 receiverData?.fcmToken?.let { token ->
                     if (token.isNotEmpty()) {
