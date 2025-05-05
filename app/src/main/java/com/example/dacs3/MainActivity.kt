@@ -155,12 +155,23 @@ class MainActivity : ComponentActivity() {
                             )
                         }
 
-                        composable("points") {
-                            PointsScreen(
+
+                        composable(Screen.AddFriend.route) {
+                            AddFriendScreen(
                                 onNavigateBack = { navController.popBackStack() }
                             )
                         }
-                    }
+
+                        composable(
+                            route = "edit_post/{postId}",
+                            arguments = listOf(navArgument("postId") { type = NavType.StringType })
+                        ) { backStackEntry ->
+                            val postId = backStackEntry.arguments?.getString("postId") ?: ""
+                            EditPostScreen(
+                                navController = navController,
+                                postId = postId,
+
+                      
 
                     LaunchedEffect(authState) {
                         when (authState) {
