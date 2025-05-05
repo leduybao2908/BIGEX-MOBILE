@@ -188,6 +188,9 @@ class MainActivity : ComponentActivity() {
                                 authViewModel = authViewModel,
                                 onNavigateToUpdateProfile = { navController.navigate("update_profile") }
                             )
+
+
+                            
                         }
 
                         composable("update_profile") {
