@@ -35,26 +35,17 @@ fun UploadPostScreen(
     val realtimeDb = Firebase.database
     val currentUser = Firebase.auth.currentUser
 
-    // Trạng thái để lưu Uri ảnh đã chọn
     var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
-
-    // Trạng thái cho chú thích (caption)
     var caption by remember { mutableStateOf("") }
-
-    // Trạng thái cho biết đang upload bài viết
     var isUploading by remember { mutableStateOf(false) }
-
-    // Trạng thái thông báo lỗi (nếu có)
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
-    // Khởi tạo launcher để chọn ảnh từ thư viện
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = PickVisualMedia()
     ) { uri ->
         selectedImageUri = uri
     }
 
-    // Scaffold chứa TopAppBar và nội dung màn hình
     Scaffold(
         topBar = {
             TopAppBar(
@@ -74,14 +65,12 @@ fun UploadPostScreen(
                 .fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Nút chọn ảnh
             Button(onClick = {
                 imagePickerLauncher.launch(PickVisualMediaRequest(PickVisualMedia.ImageOnly))
             }) {
                 Text("Chọn ảnh từ thư viện")
             }
 
-            // Hiển thị ảnh đã chọn
             selectedImageUri?.let { uri ->
                 Spacer(modifier = Modifier.height(16.dp))
                 Image(
@@ -95,7 +84,6 @@ fun UploadPostScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Nhập chú thích bài viết
             OutlinedTextField(
                 value = caption,
                 onValueChange = { caption = it },
@@ -105,7 +93,6 @@ fun UploadPostScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Nút đăng bài viết
             Button(
                 onClick = {
                     if (caption.isNotBlank() && currentUser != null) {
@@ -113,7 +100,6 @@ fun UploadPostScreen(
 
                         var imageBase64: String? = null
 
-                        // Nếu có ảnh được chọn, chuyển ảnh thành chuỗi Base64 để lưu lên Firebase
                         selectedImageUri?.let { uri ->
                             val bitmap: Bitmap = if (Build.VERSION.SDK_INT < 28) {
                                 android.provider.MediaStore.Images.Media.getBitmap(
@@ -130,16 +116,14 @@ fun UploadPostScreen(
                             imageBase64 = Base64.encodeToString(byteArray, Base64.DEFAULT)
                         }
 
-                        // Lấy thông tin người dùng từ Firebase để lưu vào bài viết
+                        // Lấy userName và avatar từ Firebase
                         val userRef = realtimeDb.getReference("users").child(currentUser.uid)
                         userRef.get().addOnSuccessListener { snapshot ->
                             val userName = snapshot.child("username").getValue(String::class.java) ?: "Không tên"
                             val userAvatar = snapshot.child("profilePicture").getValue(String::class.java)
 
-                            // Tạo ID mới cho bài viết
                             val postId = realtimeDb.reference.child("posts").push().key
                             if (postId != null) {
-                                // Tạo object bài viết
                                 val post = mapOf(
                                     "caption" to caption,
                                     "userId" to currentUser.uid,
@@ -149,14 +133,13 @@ fun UploadPostScreen(
                                     "imageBase64" to imageBase64
                                 )
 
-                                // Lưu bài viết lên Firebase
                                 realtimeDb.reference.child("posts").child(postId)
                                     .setValue(post)
                                     .addOnSuccessListener {
                                         isUploading = false
                                         caption = ""
                                         selectedImageUri = null
-                                        navController.popBackStack() // Quay lại màn trước
+                                        navController.popBackStack()
                                     }
                                     .addOnFailureListener { e ->
                                         isUploading = false
@@ -176,7 +159,6 @@ fun UploadPostScreen(
                 Text(if (isUploading) "Đang đăng..." else "Đăng bài")
             }
 
-            // Hiển thị lỗi nếu có
             errorMessage?.let {
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(text = it, color = MaterialTheme.colorScheme.error)

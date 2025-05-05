@@ -18,13 +18,6 @@ import androidx.core.content.ContextCompat
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-<<<<<<< Updated upstream
-=======
-<<<<<<< HEAD
-import com.example.dacs3.ui.screens.SocialNetwork.CommentScreen
-=======
->>>>>>> ba0d8fbf4ba820666b5b55adff807481bb267fd4
->>>>>>> Stashed changes
 import com.example.dacs3.data.UserPreferences
 import com.example.dacs3.navigation.*
 import com.example.dacs3.ui.components.BottomBar
@@ -39,17 +32,6 @@ import com.google.firebase.messaging.FirebaseMessaging
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-<<<<<<< Updated upstream
-=======
-<<<<<<< HEAD
-import android.os.Build
-import android.provider.Settings
-import android.widget.Toast
-import android.app.AlertDialog
-import com.example.dacs3.ui.screens.SocialNetwork.viewmodel.FeelingScreen
-=======
->>>>>>> ba0d8fbf4ba820666b5b55adff807481bb267fd4
->>>>>>> Stashed changes
 
 class MainActivity : ComponentActivity() {
     private val snackbarHostState = SnackbarHostState()
@@ -165,58 +147,11 @@ class MainActivity : ComponentActivity() {
                             )
                         }
 
-<<<<<<< Updated upstream
-=======
-<<<<<<< HEAD
-                        composable(BottomBarScreen.Profile.route) {
-                            ProfileScreen(
-                                authViewModel = authViewModel,
-                                onNavigateToUpdateProfile = { navController.navigate("update_profile") }
-                            )
-                        }
-
-                        composable("update_profile") {
-                            UpdateProfileScreen(
-                                onNavigateBack = { navController.popBackStack() },
-                                authViewModel = authViewModel
-                            )
-                        }
-
-                        composable(BottomBarScreen.Chat.route) {
-                            ChatScreen(
-                                onNavigateToAddFriend = { navController.navigate(Screen.AddFriend.route) },
-                                onNavigateToMessage = { uid, username -> navController.navigate("message/$uid/$username") }
-                            )
-                        }
-                        composable("comments/{postId}") { backStackEntry ->
-                            val postId = backStackEntry.arguments?.getString("postId") ?: ""
-                            CommentScreen(postId = postId, navController = navController)
-                        }
-
-                        composable("feelings/{postId}") { backStackEntry ->
-                            val postId = backStackEntry.arguments?.getString("postId") ?: return@composable
-                            FeelingScreen(postId = postId, navController = navController)
-                        }
-
-
-                        composable("full_image") {
-                            FullImageScreen()
-                        }
-
-
-                        composable(BottomBarScreen.Social.route) {
-                            SocialNetwork(navController = navController)
-                        }
-
-=======
->>>>>>> ba0d8fbf4ba820666b5b55adff807481bb267fd4
->>>>>>> Stashed changes
                         composable(BottomBarScreen.tree.route) {
                             TreeScreen(
                                 onNavigateToPoints = {
                                     navController.navigate("points")
                                 }
-<<<<<<< Updated upstream
                             )
                         }
 
@@ -237,17 +172,6 @@ class MainActivity : ComponentActivity() {
                                 postId = postId,
 
                       
-=======
-                            )
-                        }
-
-                        composable("points") {
-                            PointsScreen(
-                                onNavigateBack = { navController.popBackStack() }
-                            )
-                        }
-                    }
->>>>>>> Stashed changes
 
                     LaunchedEffect(authState) {
                         when (authState) {
