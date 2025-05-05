@@ -17,7 +17,7 @@ import androidx.navigation.*
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-
+import com.example.dacs3.ui.screens.SocialNetwork.CommentScreen
 import com.example.dacs3.data.UserPreferences
 import com.example.dacs3.navigation.*
 import com.example.dacs3.ui.components.*
@@ -44,6 +44,7 @@ import android.os.Build
 import android.provider.Settings
 import android.widget.Toast
 import android.app.AlertDialog
+import com.example.dacs3.ui.screens.SocialNetwork.viewmodel.FeelingScreen
 
 class MainActivity : ComponentActivity() {
     private val snackbarHostState = SnackbarHostState()
@@ -188,9 +189,6 @@ class MainActivity : ComponentActivity() {
                                 authViewModel = authViewModel,
                                 onNavigateToUpdateProfile = { navController.navigate("update_profile") }
                             )
-
-
-                            
                         }
 
                         composable("update_profile") {
@@ -206,6 +204,16 @@ class MainActivity : ComponentActivity() {
                                 onNavigateToMessage = { uid, username -> navController.navigate("message/$uid/$username") }
                             )
                         }
+                        composable("comments/{postId}") { backStackEntry ->
+                            val postId = backStackEntry.arguments?.getString("postId") ?: ""
+                            CommentScreen(postId = postId, navController = navController)
+                        }
+
+                        composable("feelings/{postId}") { backStackEntry ->
+                            val postId = backStackEntry.arguments?.getString("postId") ?: return@composable
+                            FeelingScreen(postId = postId, navController = navController)
+                        }
+
 
                         composable("full_image") {
                             FullImageScreen()
@@ -223,12 +231,6 @@ class MainActivity : ComponentActivity() {
                         composable(BottomBarScreen.Notification.route) {
                             NotificationScreen(
                                 onNavigateToMessage = { userId, username -> navController.navigate("message/$userId/$username") }
-                            )
-                        }
-
-                        composable(Screen.AddFriend.route) {
-                            AddFriendScreen(
-                                onNavigateBack = { navController.popBackStack() }
                             )
                         }
 
@@ -262,7 +264,7 @@ class MainActivity : ComponentActivity() {
                                 friendUsername = username,
                                 onNavigateBack = { navController.popBackStack() },
 
-                            )
+                                )
                         }
                     }
 
