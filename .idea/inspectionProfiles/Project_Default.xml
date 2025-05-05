@@ -51,6 +51,13 @@
     </inspection_tool>
     <inspection_tool class="PreviewParameterProviderOnFirstParameter" enabled="true" level="ERROR" enabled_by_default="true">
       <option name="composableFile" value="true" />
+<<<<<<< Updated upstream
+=======
+<<<<<<< HEAD
+      <option name="previewFile" value="true" />
+=======
+>>>>>>> ba0d8fbf4ba820666b5b55adff807481bb267fd4
+>>>>>>> Stashed changes
     </inspection_tool>
     <inspection_tool class="PreviewPickerAnnotation" enabled="true" level="ERROR" enabled_by_default="true">
       <option name="composableFile" value="true" />

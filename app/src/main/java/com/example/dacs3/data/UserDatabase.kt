@@ -7,6 +7,7 @@ import com.google.firebase.database.*
 import com.google.firebase.database.ktx.database
 import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.tasks.await
+<<<<<<< Updated upstream
 import com.google.firebase.database.IgnoreExtraProperties
 
 @IgnoreExtraProperties
@@ -47,6 +48,8 @@ data class UserDatabaseModel(
     @set:PropertyName("fcmToken")
     var fcmToken: String = ""
 )
+=======
+>>>>>>> Stashed changes
 
 
 class UserDatabase {
@@ -149,6 +152,7 @@ class UserDatabase {
     ) {
         usersRef.addValueEventListener(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
+<<<<<<< Updated upstream
 
                 try {
                     val usersList = mutableListOf<UserDatabaseModel>()
@@ -176,6 +180,21 @@ class UserDatabase {
                             println("Error converting user data: ${e.message}")
                         }
 
+=======
+                val usersList = mutableListOf<UserDatabaseModel>()
+                for (userSnapshot in snapshot.children) {
+                    try {
+                        if (!userSnapshot.hasChildren()) {
+                            Log.e("observeUsers", "Invalid user at ${userSnapshot.key}: ${userSnapshot.value}")
+                            continue
+                        }
+                        val user = userSnapshot.getValue(UserDatabaseModel::class.java)
+                        if (user != null) {
+                            usersList.add(user)
+                        }
+                    } catch (e: Exception) {
+                        Log.e("observeUsers", "Error parsing user at ${userSnapshot.key}", e)
+>>>>>>> Stashed changes
                     }
                     onDataChange(usersList)
                 } catch (e: Exception) {
@@ -314,5 +333,21 @@ class UserDatabase {
             throw Exception("Failed to delete notification: ${e.message}")
         }
 
+    }
+
+    private fun UserDatabaseModel.toMap(): Map<String, Any> {
+        return mapOf(
+            "uid" to uid,
+            "email" to email,
+            "username" to username,
+            "fullName" to fullName,
+            "profilePicture" to profilePicture,
+            "createdAt" to createdAt,
+            "isOnline" to isOnline,
+            "lastOnline" to lastOnline,
+            "fcmToken" to fcmToken,
+            "points" to points,
+            "transactionHistory" to transactionHistory
+        )
     }
 }

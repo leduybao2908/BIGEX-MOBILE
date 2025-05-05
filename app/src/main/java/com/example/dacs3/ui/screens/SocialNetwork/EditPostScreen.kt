@@ -36,18 +36,20 @@ fun EditPostScreen(
 ) {
     val context = LocalContext.current
     val realtimeDb = Firebase.database
-    var originalPost by remember { mutableStateOf<Post?>(null) }
 
-    var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
-    var caption by remember { mutableStateOf("") }
-    var isUpdating by remember { mutableStateOf(false) }
-    var errorMessage by remember { mutableStateOf<String?>(null) }
+    var originalPost by remember { mutableStateOf<Post?>(null) } // Bài viết gốc cần chỉnh sửa
 
+    var selectedImageUri by remember { mutableStateOf<Uri?>(null) } // Ảnh mới nếu người dùng chọn
+    var caption by remember { mutableStateOf("") } // Chú thích mới
+    var isUpdating by remember { mutableStateOf(false) } // Trạng thái đang cập nhật
+    var errorMessage by remember { mutableStateOf<String?>(null) } // Thông báo lỗi
+
+    // Bộ chọn ảnh từ thư viện
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = PickVisualMedia()
-    ) { uri -> selectedImageUri = uri }
+    ) { uri -> selectedImageUri = uri } // Lưu URI ảnh khi người dùng chọn
 
-    // Load post từ Firebase
+    // Load dữ liệu bài viết gốc từ Firebase khi vào màn hình
     LaunchedEffect(postId) {
         val snapshot = realtimeDb.getReference("posts").child(postId).get().await()
         val post = snapshot.getValue(Post::class.java)
@@ -57,7 +59,7 @@ fun EditPostScreen(
         }
     }
 
-    // Decode ảnh base64 thành Bitmap nếu không chọn ảnh mới
+    // Nếu chưa chọn ảnh mới, hiển thị ảnh gốc dưới dạng bitmap
     val displayBitmap = remember(originalPost?.imageBase64) {
         originalPost?.imageBase64?.takeIf { selectedImageUri == null }?.let {
             val bytes = Base64.decode(it, Base64.DEFAULT)
@@ -84,6 +86,7 @@ fun EditPostScreen(
                 .fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            // Nút chọn ảnh mới
             Button(onClick = {
                 imagePickerLauncher.launch(PickVisualMediaRequest(PickVisualMedia.ImageOnly))
             }) {
@@ -92,7 +95,7 @@ fun EditPostScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Hiển thị ảnh mới hoặc ảnh gốc
+            // Hiển thị ảnh mới nếu có, nếu không thì hiển thị ảnh gốc
             selectedImageUri?.let { uri ->
                 Image(
                     painter = rememberAsyncImagePainter(uri),
@@ -113,6 +116,7 @@ fun EditPostScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
+            // Trường chỉnh sửa chú thích
             OutlinedTextField(
                 value = caption,
                 onValueChange = { caption = it },
@@ -122,6 +126,7 @@ fun EditPostScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
+            // Nút "Cập nhật bài viết"
             Button(
                 onClick = {
                     if (caption.isNotBlank()) {
@@ -129,6 +134,7 @@ fun EditPostScreen(
 
                         var imageBase64: String? = originalPost?.imageBase64
 
+                        // Nếu có chọn ảnh mới thì mã hóa ảnh đó sang base64
                         selectedImageUri?.let { uri ->
                             val bitmap: Bitmap = if (Build.VERSION.SDK_INT < 28) {
                                 android.provider.MediaStore.Images.Media.getBitmap(
@@ -145,16 +151,18 @@ fun EditPostScreen(
                             imageBase64 = Base64.encodeToString(byteArray, Base64.DEFAULT)
                         }
 
+                        // Dữ liệu cập nhật lên Firebase
                         val updatedPost = mapOf<String, Any?>(
                             "caption" to caption,
                             "imageBase64" to imageBase64
                         )
 
+                        // Gửi dữ liệu cập nhật lên Firebase
                         realtimeDb.getReference("posts").child(postId)
                             .updateChildren(updatedPost)
                             .addOnSuccessListener {
                                 isUpdating = false
-                                navController.popBackStack()
+                                navController.popBackStack() // Quay lại màn hình trước
                             }
                             .addOnFailureListener {
                                 isUpdating = false
@@ -169,6 +177,7 @@ fun EditPostScreen(
                 Text(if (isUpdating) "Đang cập nhật..." else "Cập nhật bài viết")
             }
 
+            // Hiển thị lỗi nếu có
             errorMessage?.let {
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(text = it, color = MaterialTheme.colorScheme.error)

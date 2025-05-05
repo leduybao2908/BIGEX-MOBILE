@@ -223,7 +223,7 @@ private fun ProfileInfo(
             }
         }
     }
-}
+    }
 
 @Composable
 private fun InfoRow(
