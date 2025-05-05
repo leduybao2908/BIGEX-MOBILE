@@ -1,8 +1,11 @@
 package com.example.dacs3
 
 import android.Manifest
-import android.content.pm.PackageManager
+import android.content.Intent
+import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -11,39 +14,24 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.*
 import androidx.core.content.ContextCompat
-import androidx.navigation.*
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-
 import com.example.dacs3.data.UserPreferences
 import com.example.dacs3.navigation.*
-import com.example.dacs3.ui.components.*
+import com.example.dacs3.ui.components.BottomBar
+import com.example.dacs3.ui.components.BottomBarScreen
 import com.example.dacs3.ui.screens.auth.LoginScreen
 import com.example.dacs3.ui.screens.auth.SignUpScreen
-import com.example.dacs3.ui.screens.chat.*
-import com.example.dacs3.ui.screens.notification.*
-import com.example.dacs3.ui.screens.profile.*
-import com.example.dacs3.ui.theme.DACS3Theme
-import android.content.Intent
-import android.net.Uri
-import android.util.Log
-import androidx.lifecycle.lifecycleScope
-import com.example.dacs3.ui.screens.SocialNetwork.SocialNetwork
-import com.example.dacs3.ui.screens.SocialNetwork.UploadPostScreen
-import com.example.dacs3.ui.screens.SocialNetwork.FullImageScreen
-import com.example.dacs3.ui.screens.SocialNetwork.EditPostScreen
+import com.example.dacs3.ui.screens.points.PointsScreen
 import com.example.dacs3.ui.screens.tree.*
-
+import com.example.dacs3.ui.theme.DACS3Theme
 import com.example.dacs3.viewmodels.*
 import com.google.firebase.messaging.FirebaseMessaging
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import android.os.Build
-import android.provider.Settings
-import android.widget.Toast
-import android.app.AlertDialog
 
 class MainActivity : ComponentActivity() {
     private val snackbarHostState = SnackbarHostState()
@@ -59,7 +47,6 @@ class MainActivity : ComponentActivity() {
                 actionLabel = "Settings",
                 duration = SnackbarDuration.Long
             ) {
-                // Open app settings
                 val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
                     data = Uri.fromParts("package", packageName, null)
                 }
@@ -74,12 +61,13 @@ class MainActivity : ComponentActivity() {
         duration: SnackbarDuration = SnackbarDuration.Short,
         action: (() -> Unit)? = null
     ) {
-        lifecycleScope.launch {
-            snackbarHostState.showSnackbar(
+        CoroutineScope(Dispatchers.Main).launch {
+            val result = snackbarHostState.showSnackbar(
                 message = message,
                 actionLabel = actionLabel,
                 duration = duration
-            ).also {
+            )
+            if (result == SnackbarResult.ActionPerformed) {
                 action?.invoke()
             }
         }
@@ -91,35 +79,11 @@ class MainActivity : ComponentActivity() {
                 ContextCompat.checkSelfPermission(
                     this,
                     Manifest.permission.POST_NOTIFICATIONS
-                ) == PackageManager.PERMISSION_GRANTED -> {
-                    // Permission already granted
+                ) == android.content.pm.PackageManager.PERMISSION_GRANTED -> {
                 }
                 else -> {
-                    // Request permission
                     requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
                 }
-            }
-        }
-    }
-
-    private fun checkAndRequestOverlayPermission() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            if (!Settings.canDrawOverlays(this)) {
-                val builder = AlertDialog.Builder(this)
-                builder.setTitle("Permission Required")
-                    .setMessage("We need 'Draw over other apps' permission to enable offline call feature.")
-                    .setPositiveButton("Grant") { _, _ ->
-                        val intent = Intent(
-                            Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                            Uri.parse("package:$packageName")
-                        )
-                        startActivity(intent)
-                    }
-                    .setNegativeButton("Cancel") { dialog, _ ->
-                        dialog.dismiss()
-                        Toast.makeText(this, "Permission denied", Toast.LENGTH_SHORT).show()
-                    }
-                    .show()
             }
         }
     }
@@ -128,11 +92,8 @@ class MainActivity : ComponentActivity() {
         FirebaseMessaging.getInstance().token
             .addOnCompleteListener { task ->
                 if (task.isSuccessful) {
-                    val token = task.result
-                    Log.d("FCM", "Test FCM Token: $token")
                     showSnackbar("FCM Token retrieved. Check Logcat for the token.")
                 } else {
-                    Log.e("FCM", "Failed to get FCM token", task.exception)
                     showSnackbar("Failed to get FCM token")
                 }
             }
@@ -143,7 +104,6 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         checkNotificationPermission()
         getTestFCMToken()
-        checkAndRequestOverlayPermission()
 
         val userPreferences = UserPreferences(this)
         val authViewModel = AuthViewModel(userPreferences)
@@ -170,7 +130,9 @@ class MainActivity : ComponentActivity() {
                         composable(Screen.Login.route) {
                             LoginScreen(
                                 navController = navController,
-                                onLogin = { email, password -> authViewModel.login(email, password) },
+                                onLogin = { email, password ->
+                                    authViewModel.login(email, password)
+                                },
                                 authViewModel = authViewModel
                             )
                         }
@@ -178,50 +140,21 @@ class MainActivity : ComponentActivity() {
                         composable(Screen.SignUp.route) {
                             SignUpScreen(
                                 navController = navController,
-                                onSignUp = { username, email, password -> authViewModel.signUp(username, email, password) },
+                                onSignUp = { username, email, password ->
+                                    authViewModel.signUp(username, email, password)
+                                },
                                 authViewModel = authViewModel
                             )
-                        }
-
-                        composable(BottomBarScreen.Profile.route) {
-                            ProfileScreen(
-                                authViewModel = authViewModel,
-                                onNavigateToUpdateProfile = { navController.navigate("update_profile") }
-                            )
-                        }
-
-                        composable("update_profile") {
-                            UpdateProfileScreen(
-                                onNavigateBack = { navController.popBackStack() },
-                                authViewModel = authViewModel
-                            )
-                        }
-
-                        composable(BottomBarScreen.Chat.route) {
-                            ChatScreen(
-                                onNavigateToAddFriend = { navController.navigate(Screen.AddFriend.route) },
-                                onNavigateToMessage = { uid, username -> navController.navigate("message/$uid/$username") }
-                            )
-                        }
-
-                        composable("full_image") {
-                            FullImageScreen()
-                        }
-
-
-                        composable(BottomBarScreen.Social.route) {
-                            SocialNetwork(navController = navController)
                         }
 
                         composable(BottomBarScreen.tree.route) {
-                            TreeScreen()
-                        }
-
-                        composable(BottomBarScreen.Notification.route) {
-                            NotificationScreen(
-                                onNavigateToMessage = { userId, username -> navController.navigate("message/$userId/$username") }
+                            TreeScreen(
+                                onNavigateToPoints = {
+                                    navController.navigate("points")
+                                }
                             )
                         }
+
 
                         composable(Screen.AddFriend.route) {
                             AddFriendScreen(
@@ -237,41 +170,17 @@ class MainActivity : ComponentActivity() {
                             EditPostScreen(
                                 navController = navController,
                                 postId = postId,
-                                onNavigateBack = { navController.popBackStack() }
-                            )
-                        }
 
-                        composable("upload_post") {
-                            UploadPostScreen(
-                                onNavigateBack = { navController.popBackStack() },
-                                navController = navController
-                            )
-                        }
-
-                        composable(
-                            route = "message/{uid}/{username}",
-                            deepLinks = listOf(navDeepLink { uriPattern = "android-app://androidx.navigation/message/{uid}/{username}" })
-                        ) { backStackEntry ->
-                            val uid = backStackEntry.arguments?.getString("uid") ?: return@composable
-                            val username = backStackEntry.arguments?.getString("username") ?: return@composable
-                            MessageScreen(
-                                friendId = uid,
-                                friendUsername = username,
-                                onNavigateBack = { navController.popBackStack() },
-
-                            )
-                        }
-                    }
+                      
 
                     LaunchedEffect(authState) {
                         when (authState) {
                             is AuthState.Success -> {
-                                navController.navigate(BottomBarScreen.Profile.route) {
+                                navController.navigate(BottomBarScreen.tree.route) {
                                     popUpTo(Screen.Login.route) { inclusive = true }
                                 }
                             }
                             is AuthState.Error -> {
-                                // Error will be handled in the respective screens
                             }
                             else -> {}
                         }
@@ -287,7 +196,6 @@ class MainActivity : ComponentActivity() {
                                 authViewModel.clearEvents()
                             }
                             is AuthEvent.ShowError -> {
-                                // Error will be handled in the respective screens
                             }
                             null -> {}
                         }
@@ -295,21 +203,5 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
-    }
-}
-
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    DACS3Theme {
-        Greeting("Android")
     }
 }

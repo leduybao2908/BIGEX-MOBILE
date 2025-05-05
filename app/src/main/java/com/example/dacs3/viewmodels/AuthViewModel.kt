@@ -39,7 +39,7 @@ class AuthViewModel(
                         try {
                             val fcmToken = FirebaseMessaging.getInstance().token.await()
                             println("FCM Token updated: $fcmToken") // Log FCM token
-                            userDatabase.usersRef.child(firebaseUser.uid).child("fcmToken").setValue(fcmToken)
+                            userDatabase.updateFcmToken(firebaseUser.uid, fcmToken)
                         } catch (e: Exception) {
                             println("Failed to update FCM token: ${e.message}")
                         }
@@ -285,7 +285,7 @@ class AuthViewModel(
             
             // Update online status and FCM token in database
             userDatabase.updateUserStatus(user.uid, true)
-            userDatabase.usersRef.child(user.uid).child("fcmToken").setValue(fcmToken).await()
+            userDatabase.updateFcmToken(user.uid, fcmToken)
             
             userPreferences.saveUser(user)
             _authState.value = AuthState.Success(user)

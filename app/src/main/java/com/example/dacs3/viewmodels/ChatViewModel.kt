@@ -3,9 +3,9 @@ package com.example.dacs3.viewmodels
 import android.content.Context
 import android.util.Log
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.dacs3.data.UserDatabase
-import com.example.dacs3.data.UserDatabaseModel
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.*
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -13,6 +13,8 @@ import kotlinx.coroutines.flow.StateFlow
 import com.example.dacs3.service.NotificationService
 import kotlinx.coroutines.*
 import java.util.*
+
+// ... (Message data class remains unchanged)
 
 data class Message(
     @get:PropertyName("id")
@@ -64,7 +66,6 @@ class ChatViewModel(private val context: Context) : ViewModel() {
     private val auth = FirebaseAuth.getInstance()
     private val notificationService = NotificationService(context)
 
-    // Expose current user ID
     val currentUserId: String?
         get() = auth.currentUser?.uid
 
@@ -342,5 +343,14 @@ class ChatViewModel(private val context: Context) : ViewModel() {
     fun getFriendLastOnline(friendId: String): Long {
         val friend = friends.value.find { it.uid == friendId }
         return friend?.lastOnline ?: System.currentTimeMillis()
+    }
+    class Factory(private val context: Context) : ViewModelProvider.Factory {
+        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+            if (modelClass.isAssignableFrom(ChatViewModel::class.java)) {
+                @Suppress("UNCHECKED_CAST")
+                return ChatViewModel(context) as T
+            }
+            throw IllegalArgumentException("Unknown ViewModel class")
+        }
     }
 }

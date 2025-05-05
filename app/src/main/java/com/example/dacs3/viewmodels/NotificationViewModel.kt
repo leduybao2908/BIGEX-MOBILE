@@ -4,7 +4,6 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.dacs3.data.UserDatabase
-import com.example.dacs3.data.UserDatabaseModel
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.*
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -38,7 +37,8 @@ class NotificationViewModel : ViewModel() {
         if (currentUserId.isEmpty()) return
 
         // Observe friend requests
-        userDatabase.observeFriendRequests(currentUserId,
+        userDatabase.observeFriendRequests(
+            currentUserId,
             onDataChange = { requests ->
                 viewModelScope.launch {
                     val notificationsList = mutableListOf<Notification>()
@@ -97,8 +97,8 @@ class NotificationViewModel : ViewModel() {
                         })
                 }
             },
-            onError = { error ->
-                Log.e("Notification", "Error loading notifications", error.toException())
+            onError = {
+                Log.e("Notification", "Error loading notifications") // Removed error parameter
             }
         )
     }
