@@ -1,8 +1,5 @@
 package com.example.dacs3.data
 
-import android.util.Log
-import com.example.dacs3.viewmodels.UserDatabaseModel
-import com.example.dacs3.viewmodels.Transaction
 import com.google.firebase.database.*
 import com.google.firebase.database.ktx.database
 import com.google.firebase.ktx.Firebase
@@ -48,10 +45,9 @@ data class UserDatabaseModel(
     var fcmToken: String = ""
 )
 
-
 class UserDatabase {
     val database = FirebaseDatabase.getInstance("https://dacs3-5cf79-default-rtdb.asia-southeast1.firebasedatabase.app")
-    private val usersRef = database.getReference("users")
+    val usersRef = database.getReference("users")
     private val friendsRef = database.getReference("friends")
     private val friendRequestsRef = database.getReference("friend_requests")
     private val notificationsRef = database.getReference("notifications")
@@ -64,37 +60,6 @@ class UserDatabase {
         }
     }
 
-    suspend fun createOrUpdateUser(user: UserDatabaseModel) {
-        try {
-            val existingUserSnapshot = usersRef.child(user.uid).get().await()
-            if (existingUserSnapshot.exists()) {
-                usersRef.child(user.uid).updateChildren(user.toMap()).await()
-            } else {
-                usersRef.child(user.uid).setValue(user).await()
-            }
-        } catch (e: Exception) {
-            throw Exception("Failed to create or update user: ${e.message}")
-        }
-    }
-
-    suspend fun checkEmailExists(email: String): Boolean {
-        try {
-            val snapshot = usersRef.orderByChild("email").equalTo(email).get().await()
-            return snapshot.exists() && snapshot.childrenCount > 0
-        } catch (e: Exception) {
-            Log.e("UserDatabase", "Error checking email existence", e)
-            return false
-        }
-    }
-
-    suspend fun updateFcmToken(uid: String, fcmToken: String) {
-        try {
-            usersRef.child(uid).child("fcmToken").setValue(fcmToken).await()
-        } catch (e: Exception) {
-            throw Exception("Failed to update FCM token: ${e.message}")
-        }
-    }
-
     suspend fun updateUserStatus(uid: String, isOnline: Boolean) {
         try {
             val userRef = usersRef.child(uid)
@@ -102,15 +67,19 @@ class UserDatabase {
                 "isOnline" to isOnline,
                 "lastOnline" to if (!isOnline) System.currentTimeMillis() else ServerValue.TIMESTAMP
             )
+            
             if (isOnline) {
+                // Khi user online, thiết lập onDisconnect để tự động cập nhật trạng thái offline khi mất kết nối
                 val offlineUpdates = hashMapOf<String, Any>(
                     "isOnline" to false,
                     "lastOnline" to ServerValue.TIMESTAMP
                 )
                 userRef.onDisconnect().updateChildren(offlineUpdates)
             } else {
+                // Khi user offline có chủ ý, hủy onDisconnect handler
                 userRef.onDisconnect().cancel()
             }
+            
             userRef.updateChildren(updates).await()
         } catch (e: Exception) {
             throw Exception("Failed to update user status: ${e.message}")
@@ -119,37 +88,15 @@ class UserDatabase {
 
     suspend fun updateUser(uid: String, updates: Map<String, Any>) {
         try {
-            usersRef.child(uid).updateChildren(updates).await()
+            database.reference.child("users").child(uid).updateChildren(updates).await()
         } catch (e: Exception) {
             throw Exception("Failed to update user: ${e.message}")
         }
     }
 
-    suspend fun addPointsAndTransaction(uid: String, points: Int, transaction: Transaction) {
-        try {
-            val userRef = usersRef.child(uid)
-            val snapshot = userRef.get().await()
-            val currentUser = snapshot.getValue(UserDatabaseModel::class.java)
-            val newPoints = (currentUser?.points ?: 0) + points
-            val newHistory = (currentUser?.transactionHistory ?: emptyList()) + transaction
-
-            val updates = mapOf(
-                "points" to newPoints,
-                "transactionHistory" to newHistory
-            )
-            userRef.updateChildren(updates).await()
-        } catch (e: Exception) {
-            throw Exception("Failed to update points and transaction: ${e.message}")
-        }
-    }
-
-    fun observeUsers(
-        onDataChange: (List<UserDatabaseModel>) -> Unit,
-        onError: (DatabaseError) -> Unit
-    ) {
+    fun observeUsers(onDataChange: (List<UserDatabaseModel>) -> Unit, onError: (DatabaseError) -> Unit) {
         usersRef.addValueEventListener(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
-
                 try {
                     val usersList = mutableListOf<UserDatabaseModel>()
                     for (userSnapshot in snapshot.children) {
@@ -175,7 +122,6 @@ class UserDatabase {
                             // Log lỗi cho từng user nhưng vẫn tiếp tục xử lý các user khác
                             println("Error converting user data: ${e.message}")
                         }
-
                     }
                     onDataChange(usersList)
                 } catch (e: Exception) {
@@ -211,8 +157,8 @@ class UserDatabase {
             }
 
             val requestData = hashMapOf<String, Any>(
+                "fromUserId" to fromUserId,
                 "status" to "pending",
-                "type" to "received",
                 "timestamp" to ServerValue.TIMESTAMP
             )
 
@@ -225,8 +171,10 @@ class UserDatabase {
 
     suspend fun acceptFriendRequest(currentUserId: String, fromUserId: String) {
         try {
+            // Remove the friend request
             friendRequestsRef.child(currentUserId).child(fromUserId).removeValue().await()
-            friendRequestsRef.child(fromUserId).child(currentUserId).removeValue().await()
+            
+            // Create bidirectional friend relationship
             val updates = hashMapOf<String, Any>(
                 "$currentUserId/$fromUserId" to true,
                 "$fromUserId/$currentUserId" to true
@@ -240,17 +188,12 @@ class UserDatabase {
     suspend fun rejectFriendRequest(currentUserId: String, fromUserId: String) {
         try {
             friendRequestsRef.child(currentUserId).child(fromUserId).removeValue().await()
-            friendRequestsRef.child(fromUserId).child(currentUserId).removeValue().await()
         } catch (e: Exception) {
             throw Exception("Failed to reject friend request: ${e.message}")
         }
     }
 
-    fun observeFriendRequests(
-        userId: String,
-        onDataChange: (Map<String, Any>) -> Unit,
-        onError: () -> Unit
-    ) {
+    fun observeFriendRequests(userId: String, onDataChange: (Map<String, Any>) -> Unit, onError: (DatabaseError) -> Unit) {
         friendRequestsRef.child(userId).addValueEventListener(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 val requests = mutableMapOf<String, Any>()
@@ -264,7 +207,7 @@ class UserDatabase {
             }
 
             override fun onCancelled(error: DatabaseError) {
-                onError()
+                onError(error)
             }
         })
     }
@@ -276,7 +219,6 @@ class UserDatabase {
             throw Exception("Failed to get user data: ${e.message}")
         }
     }
-
 
     suspend fun saveMessageNotification(toUserId: String, fromUserId: String, fromUsername: String) {
         try {
@@ -313,6 +255,5 @@ class UserDatabase {
         } catch (e: Exception) {
             throw Exception("Failed to delete notification: ${e.message}")
         }
-
     }
 }

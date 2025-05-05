@@ -1,5 +1,6 @@
-package com.example.dacs3.ui.screens.friend
+package com.example.dacs3.ui.screens.chat
 
+import androidx.compose.animation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -13,9 +14,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.dacs3.viewmodels.AddFriendViewModel
-import com.example.dacs3.viewmodels.UserDatabaseModel
-import kotlinx.coroutines.launch
+import com.example.dacs3.data.UserDatabaseModel
+import com.example.dacs3.viewmodels.*
+import kotlinx.coroutines.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -24,17 +25,16 @@ fun AddFriendScreen(
     viewModel: AddFriendViewModel = viewModel()
 ) {
     val users by viewModel.users.collectAsState()
-    val friendRequests by viewModel.friendRequests.collectAsState()
     var searchQuery by remember { mutableStateOf("") }
     val snackbarHostState = remember { SnackbarHostState() }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Kết Bạn") },
+                title = { Text("Add Friend") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Quay lại")
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
                     }
                 }
             )
@@ -46,17 +46,18 @@ fun AddFriendScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
+            // Search bar
             TextField(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(16.dp),
-                placeholder = { Text("Tìm kiếm người dùng") },
+                placeholder = { Text("Search users") },
                 leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                 singleLine = true,
-                colors = TextFieldDefaults.colors(
-                    unfocusedContainerColor = MaterialTheme.colorScheme.surface
+                colors = TextFieldDefaults.textFieldColors(
+                    containerColor = MaterialTheme.colorScheme.surface
                 )
             )
 
@@ -67,14 +68,12 @@ fun AddFriendScreen(
             ) {
                 val filteredUsers = users.filter {
                     it.username.contains(searchQuery, ignoreCase = true) ||
-                            it.email.contains(searchQuery, ignoreCase = true)
+                    it.username.contains(searchQuery, ignoreCase = true)
                 }
                 items(filteredUsers) { user ->
                     UserItem(
                         user = user,
-                        friendRequests = friendRequests,
-                        snackbarHostState = snackbarHostState,
-                        viewModel = viewModel
+                        snackbarHostState = snackbarHostState
                     )
                 }
             }
@@ -86,18 +85,20 @@ fun AddFriendScreen(
 @Composable
 fun UserItem(
     user: UserDatabaseModel,
-    friendRequests: Map<String, Any>,
     snackbarHostState: SnackbarHostState,
-    viewModel: AddFriendViewModel
+    viewModel: AddFriendViewModel = viewModel()
 ) {
-    val request = friendRequests[user.uid] as? Map<*, *>
-    val requestStatus = request?.get("status") as? String
-    val isReceivedRequest = request?.get("type") == "received"
+    val friendRequests by viewModel.friendRequests.collectAsState()
+    val requestData = friendRequests[user.uid] as? Map<*, *>
+    val requestStatus = requestData?.get("status") as? String
+    val isReceivedRequest = requestData?.get("type") == "received"
     var isLoading by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .animateContentSize(),
         colors = CardDefaults.cardColors(
             containerColor = when {
                 requestStatus == "pending" && isReceivedRequest -> MaterialTheme.colorScheme.primaryContainer
@@ -122,7 +123,7 @@ fun UserItem(
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = user.email,
+                    text = user.username,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
@@ -136,7 +137,7 @@ fun UserItem(
                         enabled = false,
                         modifier = Modifier.padding(start = 8.dp)
                     ) {
-                        Text("Đã gửi")
+                        Text("Request Sent")
                     }
                 }
                 requestStatus == "pending" && isReceivedRequest -> {
@@ -146,27 +147,27 @@ fun UserItem(
                                 viewModel.acceptFriendRequest(user.uid)
                                 scope.launch {
                                     snackbarHostState.showSnackbar(
-                                        "Đã chấp nhận kết bạn",
+                                        "Friend request accepted",
                                         duration = SnackbarDuration.Short
                                     )
                                 }
                             },
                             modifier = Modifier.padding(start = 8.dp)
                         ) {
-                            Text("Chấp nhận")
+                            Text("Accept")
                         }
                         OutlinedButton(
                             onClick = {
                                 viewModel.rejectFriendRequest(user.uid)
                                 scope.launch {
                                     snackbarHostState.showSnackbar(
-                                        "Đã từ chối kết bạn",
+                                        "Friend request rejected",
                                         duration = SnackbarDuration.Short
                                     )
                                 }
                             }
                         ) {
-                            Text("Từ chối")
+                            Text("Reject")
                         }
                     }
                 }
@@ -177,7 +178,7 @@ fun UserItem(
                             viewModel.sendFriendRequest(user.uid)
                             scope.launch {
                                 snackbarHostState.showSnackbar(
-                                    "Đã gửi yêu cầu kết bạn",
+                                    "Friend request sent",
                                     duration = SnackbarDuration.Short
                                 )
                                 isLoading = false
@@ -192,7 +193,7 @@ fun UserItem(
                                 strokeWidth = 2.dp
                             )
                         } else {
-                            Text("Kết bạn")
+                            Text("Send Request")
                         }
                     }
                 }

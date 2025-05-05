@@ -13,7 +13,7 @@ class TreeViewModelFactory(
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(TreeViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return TreeViewModel(context, userId) as T
+            return TreeViewModel(context, userId, notificationService) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

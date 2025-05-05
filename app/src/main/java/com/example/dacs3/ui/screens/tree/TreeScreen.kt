@@ -25,9 +25,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.messaging.FirebaseMessaging
 
 @Composable
-fun TreeScreen(
-    onNavigateToPoints: () -> Unit
-) {
+fun TreeScreen() {
     val context = LocalContext.current
     val userId = FirebaseAuth.getInstance().currentUser?.uid ?: ""
     val treeViewModel: TreeViewModel = viewModel(factory = TreeViewModelFactory(context, userId))
@@ -121,13 +119,6 @@ fun TreeScreen(
             } ?: "Chưa đặt lịch nhắc nhở",
             style = MaterialTheme.typography.bodyMedium
         )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Navigate to Points Screen
-        Button(onClick = onNavigateToPoints) {
-            Text("Xem Điểm Thưởng")
-        }
 
         if (showTimePicker) {
             TimePickerDialog(
