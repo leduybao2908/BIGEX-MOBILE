@@ -27,6 +27,7 @@ fun ChatScreen(
     modifier: Modifier = Modifier,
     onNavigateToAddFriend: () -> Unit,
     onNavigateToMessage: (String, String) -> Unit,
+    onNavigateToVideoCall: (String, String) -> Unit = { _, _ -> },
     viewModel: ChatViewModel = viewModel(factory = ChatViewModelFactory(LocalContext.current))
 ) {
     val friends by viewModel.friends.collectAsState()
@@ -179,7 +180,7 @@ fun ChatScreen(
                                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                                 ) {
                                     IconButton(
-                                        onClick = { /* TODO: Implement video call */ },
+                                        onClick = { onNavigateToVideoCall(friend.uid, friend.username) },
                                         modifier = Modifier
                                             .size(32.dp)
                                             .clip(CircleShape)

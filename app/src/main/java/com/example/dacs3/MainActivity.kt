@@ -44,7 +44,11 @@ import android.os.Build
 import android.provider.Settings
 import android.widget.Toast
 import android.app.AlertDialog
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.dacs3.ui.screens.SocialNetwork.viewmodel.FeelingScreen
+import com.example.dacs3.services.VideoCallService
+import com.google.firebase.auth.FirebaseAuth
+import com.example.dacs3.ui.screens.chat.VideoCallScreen
 
 class MainActivity : ComponentActivity() {
     private val snackbarHostState = SnackbarHostState()
@@ -146,6 +150,12 @@ class MainActivity : ComponentActivity() {
         getTestFCMToken()
         checkAndRequestOverlayPermission()
 
+        // Start VideoCallService
+        val serviceIntent = Intent(this, VideoCallService::class.java).apply {
+            putExtra("userId", FirebaseAuth.getInstance().currentUser?.uid)
+        }
+        startService(serviceIntent)
+
         val userPreferences = UserPreferences(this)
         val authViewModel = AuthViewModel(userPreferences)
 
@@ -201,7 +211,16 @@ class MainActivity : ComponentActivity() {
                         composable(BottomBarScreen.Chat.route) {
                             ChatScreen(
                                 onNavigateToAddFriend = { navController.navigate(Screen.AddFriend.route) },
-                                onNavigateToMessage = { uid, username -> navController.navigate("message/$uid/$username") }
+                                onNavigateToMessage = { uid, username -> navController.navigate("message/$uid/$username") },
+                                onNavigateToVideoCall = { callerId, callerName ->
+                                    navController.navigate("video_call/$callerId/$callerName")
+                                }
+                            )
+                        }
+
+                        composable(Screen.AddFriend.route) {
+                            AddFriendScreen(
+                                onNavigateBack = { navController.popBackStack() }
                             )
                         }
                         composable("comments/{postId}") { backStackEntry ->
@@ -213,6 +232,25 @@ class MainActivity : ComponentActivity() {
                             val postId = backStackEntry.arguments?.getString("postId") ?: return@composable
                             FeelingScreen(postId = postId, navController = navController)
                         }
+
+                        composable(
+                            route = "video_call/{callerId}/{callerName}",
+                            arguments = listOf(
+                                navArgument("callerId") { type = NavType.StringType },
+                                navArgument("callerName") { type = NavType.StringType }
+                            )
+                        ) { backStackEntry ->
+                            val callerId = backStackEntry.arguments?.getString("callerId") ?: return@composable
+                            val callerName = backStackEntry.arguments?.getString("callerName") ?: return@composable
+
+                            // Sử dụng viewModel() để tạo ViewModel đúng cách
+                            val videoCallViewModel: VideoCallViewModel = viewModel()
+
+                            VideoCallScreen(
+                                viewModel = videoCallViewModel
+                            )
+                        }
+
 
 
                         composable("full_image") {
@@ -263,8 +301,10 @@ class MainActivity : ComponentActivity() {
                                 friendId = uid,
                                 friendUsername = username,
                                 onNavigateBack = { navController.popBackStack() },
-
-                                )
+                                onNavigateToVideoCall = { callerId, callerName ->
+                                    navController.navigate("video_call/$callerId/$callerName")
+                                }
+                            )
                         }
                     }
 
