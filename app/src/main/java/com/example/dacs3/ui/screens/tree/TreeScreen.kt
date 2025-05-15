@@ -31,8 +31,10 @@ fun TreeScreen() {
     val treeViewModel: TreeViewModel = viewModel(factory = TreeViewModelFactory(context, userId))
     val activeTree by treeViewModel.activeTree.observeAsState()
     val isWateredToday by treeViewModel.isWateredToday.observeAsState(false)
+    val pointsData by treeViewModel.pointsData.observeAsState()
     var fcmToken by remember { mutableStateOf("") }
     var showTimePicker by remember { mutableStateOf(false) }
+    var showRedemptionDialog by remember { mutableStateOf(false) }
 
     // Request notification permission
     val permissionLauncher = rememberLauncherForActivityResult(
@@ -42,7 +44,6 @@ fun TreeScreen() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
-        // Get FCM token
         FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
             if (task.isSuccessful) {
                 fcmToken = task.result
@@ -57,6 +58,13 @@ fun TreeScreen() {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
+        // Points Display
+        Text(
+            text = "Điểm của bạn: ${pointsData?.points ?: 0}",
+            style = MaterialTheme.typography.titleMedium
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+
         // Tree Image
         val treeImage = when (activeTree?.treeState) {
             TreeState.Seed -> R.drawable.seed
@@ -105,6 +113,28 @@ fun TreeScreen() {
 
         Spacer(modifier = Modifier.height(16.dp))
 
+        // Redemption History
+        Text("Lịch sử đổi điểm:", style = MaterialTheme.typography.titleMedium)
+        LazyColumn(
+            modifier = Modifier
+                .heightIn(max = 100.dp)
+                .fillMaxWidth()
+        ) {
+            items(pointsData?.redemptionHistory ?: emptyList()) { record ->
+                Text(
+                    "${record.details} (${record.amount} điểm) - ${java.text.SimpleDateFormat("dd/MM/yyyy").format(record.timestamp)}",
+                    modifier = Modifier.padding(4.dp)
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Redemption Button
+        Button(onClick = { showRedemptionDialog = true }) {
+            Text("Đổi điểm")
+        }
+
         // Reminder Setting
         Button(onClick = { showTimePicker = true }) {
             Text("Đặt lịch nhắc nhở")
@@ -126,6 +156,16 @@ fun TreeScreen() {
                 onConfirm = { hour, minute ->
                     treeViewModel.setWateringReminder(hour, minute)
                     showTimePicker = false
+                }
+            )
+        }
+
+        if (showRedemptionDialog) {
+            RedemptionDialog(
+                onDismiss = { showRedemptionDialog = false },
+                onRedeem = { type, amount, details ->
+                    treeViewModel.redeemPoints(type, amount, details)
+                    showRedemptionDialog = false
                 }
             )
         }
@@ -151,6 +191,40 @@ fun TimePickerDialog(
         },
         text = {
             TimePicker(state = timePickerState)
+        }
+    )
+}
+
+@Composable
+fun RedemptionDialog(
+    onDismiss: () -> Unit,
+    onRedeem: (type: String, amount: Int, details: String) -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Đổi điểm") },
+        text = {
+            Column {
+                Button(
+                    onClick = { onRedeem("voucher", 50, "$5 Voucher") },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Đổi 50 điểm lấy $5 Voucher")
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                Button(
+                    onClick = { onRedeem("charity", 100, "Charity Donation") },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Quyên góp 100 điểm cho từ thiện")
+                }
+            }
+        },
+        confirmButton = {},
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Hủy")
+            }
         }
     )
 }

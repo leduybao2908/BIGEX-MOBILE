@@ -6,6 +6,8 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.dacs3.data.PointsData
+import com.example.dacs3.data.RedemptionRecord
 import com.example.dacs3.data.TreeData
 import com.example.dacs3.data.TreeState
 import com.example.dacs3.service.NotificationService
@@ -35,9 +37,13 @@ class TreeViewModel(
     private val _isWateredToday = MutableLiveData<Boolean>()
     val isWateredToday: LiveData<Boolean> = _isWateredToday
 
+    private val _pointsData = MutableLiveData<PointsData>()
+    val pointsData: LiveData<PointsData> = _pointsData
+
     init {
         NotificationService.initialize(context)
         loadTreeList()
+        loadPointsData()
     }
 
     private fun loadTreeList() {
@@ -66,6 +72,25 @@ class TreeViewModel(
         })
     }
 
+    private fun loadPointsData() {
+        if (userId.isEmpty()) {
+            Log.e("TreeViewModel", "User ID is empty")
+            return
+        }
+
+        val pointsRef = database.getReference("points").child(userId)
+        pointsRef.addValueEventListener(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val points = snapshot.getValue(PointsData::class.java) ?: PointsData(userId = userId)
+                _pointsData.value = points
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                Log.e("TreeViewModel", "Failed to load points data", error.toException())
+            }
+        })
+    }
+
     private fun updateWateringStatus(tree: TreeData) {
         val today = LocalDate.now().format(dateFormatter)
         _isWateredToday.value = tree.lastWateredDate == today
@@ -87,18 +112,33 @@ class TreeViewModel(
             }
     }
 
+    private fun savePoints(points: PointsData) {
+        if (userId.isEmpty()) {
+            Log.e("TreeViewModel", "User ID is empty")
+            return
+        }
+
+        val pointsRef = database.getReference("points").child(userId)
+        pointsRef.setValue(points)
+            .addOnSuccessListener {
+                Log.d("TreeViewModel", "Points saved successfully")
+            }
+            .addOnFailureListener { error ->
+                Log.e("TreeViewModel", "Failed to save points", error)
+            }
+    }
+
     fun waterTree(fcmToken: String) {
         Log.d("TreeViewModel", "waterTree() called")
         val activeTree = _activeTree.value ?: return
+        val pointsData = _pointsData.value ?: PointsData(userId = userId)
         val today = LocalDate.now()
         Log.d("TreeViewModel", "waterTree: lastWateredDate = ${activeTree.lastWateredDate}, today = $today")
 
         if (activeTree.getLocalDate().isBefore(today)) {
             Log.d("TreeViewModel", "waterTree: Watering tree")
-            // Update watering history
             activeTree.wateringHistory.add(today.format(dateFormatter))
 
-            // Update tree state
             when (activeTree.treeState) {
                 TreeState.Seed -> activeTree.treeState = TreeState.Sprout
                 TreeState.Sprout -> activeTree.treeState = TreeState.Sapling
@@ -115,10 +155,14 @@ class TreeViewModel(
             _isWateredToday.value = true
             saveTree(activeTree)
 
-            // Send success notification (using local notification for simplicity)
+            // Award points for watering
+            pointsData.points += 10
+            _pointsData.value = pointsData
+            savePoints(pointsData)
+
             notificationService.showLocalNotification(
                 title = "Tưới cây thành công",
-                body = "Bạn đã tưới cây hôm nay!"
+                body = "Bạn đã tưới cây hôm nay và nhận được 10 điểm!"
             )
         } else {
             Log.d("TreeViewModel", "waterTree: Tree already watered today")
@@ -132,12 +176,43 @@ class TreeViewModel(
         _activeTree.value = activeTree
         saveTree(activeTree)
 
-        // Schedule daily reminder
         notificationService.scheduleDailyReminder(
             hour = hour,
             minute = minute,
             title = "Nhắc nhở tưới cây",
             body = "Đã đến giờ tưới cây của bạn!"
+        )
+    }
+
+    fun redeemPoints(type: String, amount: Int, details: String) {
+        val pointsData = _pointsData.value ?: return
+        if (pointsData.points < amount) {
+            notificationService.showLocalNotification(
+                title = "Không đủ điểm",
+                body = "Bạn cần thêm điểm để thực hiện đổi thưởng!"
+            )
+            return
+        }
+
+        pointsData.points -= amount
+        pointsData.redemptionHistory.add(
+            RedemptionRecord(
+                type = type,
+                amount = amount,
+                details = details
+            )
+        )
+        _pointsData.value = pointsData
+        savePoints(pointsData)
+
+        val notificationMessage = when (type) {
+            "voucher" -> "Bạn đã đổi $details thành công!"
+            "charity" -> "Bạn đã quyên góp $amount điểm cho $details!"
+            else -> "Đổi thưởng thành công!"
+        }
+        notificationService.showLocalNotification(
+            title = "Đổi điểm thành công",
+            body = notificationMessage
         )
     }
 }
