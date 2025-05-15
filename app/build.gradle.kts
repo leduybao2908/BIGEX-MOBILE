@@ -67,8 +67,10 @@ android {
 
 dependencies {
     //VideoCall
+    // https://mvnrepository.com/artifact/org.webrtc/google-webrtc
+    implementation ("io.github.webrtc-sdk:android:125.6422.07")
     implementation ("com.github.ZEGOCLOUD:zego_uikit_prebuilt_call_android:+")
-    implementation ("io.agora.rtc:voice-sdk:4.5.0")
+    implementation("io.agora.rtc:full-sdk:4.5.0")
     // Firebase
     implementation(platform("com.google.firebase:firebase-bom:32.7.4"))
     implementation("com.google.firebase:firebase-auth-ktx")

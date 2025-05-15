@@ -41,6 +41,7 @@ fun MessageScreen(
     friendUsername: String,
     onNavigateBack: () -> Unit,
     onNavigateToVoiceCall: (String, String) -> Unit = { _, _ -> },
+    onNavigateToVideoCall: (String, String) -> Unit = { _, _ -> },
     viewModel: ChatViewModel = viewModel(factory = ChatViewModelFactory(LocalContext.current)),
     notificationViewModel: NotificationViewModel = viewModel()
 ) {
@@ -132,16 +133,29 @@ fun MessageScreen(
                         }
                     },
                     actions = {
-                        IconButton(
-                            onClick = {
-                                onNavigateToVoiceCall(friendId, friendUsername)
+                        Row {
+                            IconButton(
+                                onClick = {
+                                    onNavigateToVoiceCall(friendId, friendUsername)
+                                }
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Call,
+                                    contentDescription = "Voice Call",
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
                             }
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Call,
-                                contentDescription = "Voice Call",
-                                tint = MaterialTheme.colorScheme.primary
-                            )
+                            IconButton(
+                                onClick = {
+                                    onNavigateToVideoCall(friendId, friendUsername)
+                                }
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.VideoCall,
+                                    contentDescription = "Video Call",
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                            }
                         }
                     }
                 )
