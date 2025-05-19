@@ -100,7 +100,7 @@ fun VideoCallScreen(
     var rtcEngine by remember { mutableStateOf<RtcEngine?>(null) }
     var localSurfaceView by remember { mutableStateOf<SurfaceView?>(null) }
 
-    val token = "007eJxTYDjFGzvzW5DSt8Tdqtd8rl4Uyl8r/GCXkMMZA215jiW3tv1SYDAzMUxJMUgzTzQ0SzZJTDFMMjEyNrY0T00xTjEyMEpNnSmjlNEQyMhgH3yPhZEBAkF8HoaS1OKS+OSMxLy81BwGBgBd+CJg"
+    val token = "007eJxTYHitUHM0c+v/XRf5arcmHU/gZ9K2NOI1s1jUftfu5VwhsTwFBjMTw5QUgzTzREOzZJPEFMMkEyNjY0vz1BTjFCMDo9TUy07aGQ2BjAxWcj0sjAwQCOLzMJSkFpfEJ2ck5uWl5jAwAADjHCCd"
     val appId = "641dd0f7a16c4ad1b423397ed3d202ee"
     val channelName = "test_channel"
 
