@@ -270,6 +270,10 @@ class MainActivity : ComponentActivity() {
                         composable("payment") {
                             PaymentScreen(navController)
                         }
+                        composable(Screen.VideoCall.route) {
+                            val videoCallViewModel: VideoCallViewModel = viewModel()
+                            VideoCallScreen(viewModel = videoCallViewModel)
+                        }
 
                         composable(BottomBarScreen.tree.route) {
                             TreeScreen()

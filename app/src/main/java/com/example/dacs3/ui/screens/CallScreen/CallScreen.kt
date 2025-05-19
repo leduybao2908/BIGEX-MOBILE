@@ -30,6 +30,12 @@ fun CallScreen(navController: NavController) {
                 }) {
                     Text("Mở khóa VIP ngay")
                 }
+                Spacer(modifier = Modifier.height(8.dp))
+                Button(onClick = {
+                    navController.navigate("video_call")
+                }) {
+                    Text("Dùng thử miễn phí")
+                }
             }
         } else {
             Text(text = "Đây là màn hình gọi điện")
