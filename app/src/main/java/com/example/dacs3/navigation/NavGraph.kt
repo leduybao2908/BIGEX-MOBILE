@@ -11,4 +11,6 @@ sealed class Screen(val route: String) {
     object VideoCall : Screen("video_call")
     object Notification : Screen("notification")
     object Profile : Screen("profile")
+    object Call : Screen("call") // Thêm route Call mới
+
 }

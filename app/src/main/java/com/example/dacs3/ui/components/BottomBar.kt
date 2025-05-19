@@ -16,31 +16,37 @@ sealed class BottomBarScreen(
 ) {
     object Chat : BottomBarScreen(
         route = "chat",
-        title = "Nhắn tin",
+        title = "Chat",
         iconResId = R.drawable.ic_chat
     )
-    
+
     object Social : BottomBarScreen(
         route = "social",
-        title = "Mạng xã hội",
+        title = "Social",
         iconResId = R.drawable.ic_social
     )
-    
+
+    object Call : BottomBarScreen(
+        route = "call",
+        title = "Call",
+        iconResId = R.drawable.ic_social
+    )
+
     object tree : BottomBarScreen(
         route = "tree",
         title = "tree",
         iconResId = R.drawable.ic_tree
     )
-    
+
     object Notification : BottomBarScreen(
         route = "notification",
-        title = "Thông báo",
+        title = "Noti",
         iconResId = R.drawable.ic_notification
     )
-    
+
     object Profile : BottomBarScreen(
         route = "profile",
-        title = "Cá nhân",
+        title = "Profile",
         iconResId = R.drawable.ic_profile
     )
 }
@@ -51,6 +57,7 @@ fun BottomBar(navController: NavController) {
         BottomBarScreen.Chat,
         BottomBarScreen.Social,
         BottomBarScreen.tree,
+        BottomBarScreen.Call,
         BottomBarScreen.Notification,
         BottomBarScreen.Profile
     )
@@ -62,13 +69,13 @@ fun BottomBar(navController: NavController) {
         screens.forEach { screen ->
             val selected = currentRoute == screen.route
             NavigationBarItem(
-                icon = { 
+                icon = {
                     Icon(
                         imageVector = ImageVector.vectorResource(id = screen.iconResId),
                         contentDescription = screen.title,
-                        tint = if (selected) 
-                                MaterialTheme.colorScheme.primary 
-                              else 
+                        tint = if (selected)
+                                MaterialTheme.colorScheme.primary
+                              else
                                 MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 },
@@ -83,4 +90,4 @@ fun BottomBar(navController: NavController) {
             )
         }
     }
-} 
+}

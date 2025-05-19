@@ -2,20 +2,29 @@ package com.example.dacs3.ui.screens.profile
 
 import android.util.*
 import androidx.compose.animation.*
-import androidx.compose.foundation.background
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.ExitToApp
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.*
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.example.dacs3.ui.components.*
-import com.example.dacs3.viewmodels.*
+import androidx.compose.ui.unit.sp
+import com.example.dacs3.R
+import com.example.dacs3.ui.components.UserAvatar
+import com.example.dacs3.viewmodels.AuthState
+import com.example.dacs3.viewmodels.AuthViewModel
 import kotlinx.coroutines.launch
 
 @Composable
@@ -44,16 +53,28 @@ fun ProfileScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
-        AnimatedVisibility(
-            visible = true,
-            enter = fadeIn() + expandVertically(),
-            exit = fadeOut() + shrinkVertically()
+        // Header with Profile text and logo on right
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
+
+            Image(
+                painter = painterResource(id = R.drawable.logo_brand),
+                contentDescription = "Profile Logo",
+                modifier = Modifier
+                    .height(70.dp)
+                    .width(160.dp)
+            )
             Text(
                 text = "Profile",
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
+                fontSize = 24.sp,
+                style = MaterialTheme.typography.headlineMedium.copy(
+                    fontFamily = FontFamily.Serif,
+                    fontWeight = FontWeight.Normal
+                ),
+                color = Color.Black
             )
         }
 
@@ -71,9 +92,9 @@ fun ProfileScreen(
                 )
             }
         }
-        
+
         Spacer(modifier = Modifier.weight(1f))
-        
+
         AnimatedVisibility(
             visible = true,
             enter = fadeIn() + expandVertically(),
@@ -108,7 +129,7 @@ fun ProfileScreen(
             }
         }
     }
-    
+
     if (showLogoutDialog) {
         AlertDialog(
             onDismissRequest = { showLogoutDialog = false },
@@ -242,7 +263,7 @@ private fun InfoRow(
             modifier = Modifier.size(24.dp),
             tint = MaterialTheme.colorScheme.primary
         )
-        
+
         Column {
             Text(
                 text = label,

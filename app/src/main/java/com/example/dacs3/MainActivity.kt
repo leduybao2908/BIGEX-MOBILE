@@ -47,6 +47,8 @@ import android.app.AlertDialog
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.dacs3.ui.screens.SocialNetwork.viewmodel.FeelingScreen
 import com.example.dacs3.services.VideoCallService
+import com.example.dacs3.ui.screens.CallScreen.CallScreen
+import com.example.dacs3.ui.screens.CallScreen.PaymentScreen
 import com.google.firebase.auth.FirebaseAuth
 import com.example.dacs3.ui.screens.chat.VideoCallScreen
 
@@ -260,6 +262,13 @@ class MainActivity : ComponentActivity() {
 
                         composable(BottomBarScreen.Social.route) {
                             SocialNetwork(navController = navController)
+                        }
+
+                        composable(BottomBarScreen.Call.route) {
+                            CallScreen(navController = navController)
+                        }
+                        composable("payment") {
+                            PaymentScreen(navController)
                         }
 
                         composable(BottomBarScreen.tree.route) {
