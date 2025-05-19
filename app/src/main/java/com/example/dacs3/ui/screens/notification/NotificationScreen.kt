@@ -80,7 +80,7 @@ fun NotificationScreen(
                             contentScale = ContentScale.Fit
                         )
                         Text(
-                            text = "Profile",
+                            text = "Notification",
                             fontSize = 24.sp,
                             style = MaterialTheme.typography.headlineMedium.copy(
                                 fontFamily = FontFamily.Serif,
