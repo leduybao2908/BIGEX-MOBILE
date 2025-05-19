@@ -14,10 +14,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.*
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.*
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.dacs3.R
 import com.example.dacs3.ui.components.*
 import com.example.dacs3.viewmodels.*
 
@@ -50,15 +56,38 @@ fun ChatScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Messages") },
-                actions = {
-                    IconButton(onClick = onNavigateToAddFriend) {
-                        Icon(
-                            imageVector = Icons.Default.PersonAdd,
-                            contentDescription = "Add Friend"
+                title = {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    )
+                    {
+                        Image(
+                            painter = painterResource(id = R.drawable.logo_brand), // thay bằng hình bạn muốn
+                            contentDescription = "Messages Title",
+                            modifier = Modifier
+                                .height(70.dp)
+                                .width(150.dp),
+                            contentScale = ContentScale.Fit
+                        )
+                        Text(
+                            text = "Message",
+                            fontSize = 24.sp,
+                            style = MaterialTheme.typography.headlineMedium.copy(
+                                fontFamily = FontFamily.Serif,
+                                fontWeight = FontWeight.Normal
+                            ),
+                            color = Color.Black,
+                            modifier = Modifier.padding(end = 16.dp)
+
                         )
                     }
-                }
+                },
+                actions = {
+                    // Giữ trống hoặc có thể thêm action khác nếu muốn
+                },
+                modifier = Modifier.height(80.dp)
             )
         }
     ) { paddingValues ->
@@ -67,22 +96,45 @@ fun ChatScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            // Search bar
-            TextField(
-                value = searchQuery,
-                onValueChange = { searchQuery = it },
+            // Thanh tìm kiếm + icon thêm bạn bè
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
-                placeholder = { Text("Tìm kiếm") },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-                singleLine = true,
-                shape = RoundedCornerShape(24.dp),
-                colors = TextFieldDefaults.colors(
-                    unfocusedIndicatorColor = Color.Transparent,
-                    focusedIndicatorColor = Color.Transparent
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                TextField(
+                    value = searchQuery,
+                    onValueChange = { searchQuery = it },
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(56.dp),
+                    placeholder = { Text("Tìm kiếm") },
+                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                    singleLine = true,
+                    shape = RoundedCornerShape(24.dp),
+                    colors = TextFieldDefaults.colors(
+                        unfocusedIndicatorColor = Color.Transparent,
+                        focusedIndicatorColor = Color.Transparent
+                    )
                 )
-            )
+
+                Spacer(modifier = Modifier.width(12.dp))
+
+                IconButton(
+                    onClick = onNavigateToAddFriend,
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.primaryContainer)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.PersonAdd,
+                        contentDescription = "Add Friend",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
 
             LazyColumn(
                 modifier = modifier
@@ -97,7 +149,6 @@ fun ChatScreen(
                             .fillMaxWidth()
                             .padding(vertical = 4.dp),
                         onClick = {
-                            // Mark unread messages as read before navigating
                             viewModel.messages.value
                                 .filter { msg ->
                                     msg.senderId == friend.uid &&
